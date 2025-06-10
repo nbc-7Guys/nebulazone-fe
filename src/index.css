@@ -1,0 +1,20 @@
+body {
+  margin: 0;
+  font-family: 'Segoe UI', system-ui, Avenir, Helvetica, Arial, sans-serif;
+  background-color: #fafbfc;
+}
+
+/* 버튼만 최소 스타일 */
+button {
+  border-radius: 8px;
+  border: 1px solid #eee;
+  padding: 8px 16px;
+  font-size: 1em;
+  font-family: inherit;
+  cursor: pointer;
+  background-color: #fff;
+  transition: border-color 0.2s;
+}
+button:hover {
+  border-color: #bbb;
+}

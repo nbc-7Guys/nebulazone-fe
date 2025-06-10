@@ -1,0 +1,53 @@
+import React from "react";
+import { getMyUserIdFromJwt } from "../utils/auth";
+
+export default function ChatHistory({ chatHistory }) {
+    const myUserId = getMyUserIdFromJwt();
+
+    if (!chatHistory || chatHistory.length === 0)
+        return <div style={{ color: "#888" }}>채팅 기록이 없습니다.</div>;
+
+    return (
+        <div style={{ maxHeight: 340, overflowY: "auto", padding: "8px 0" }}>
+            {chatHistory.map((msg, i) => {
+                // msg.userId(혹은 senderId, 실제 백엔드 응답에 맞게)
+                const isMe = String(msg.senderId) === String(myUserId);
+                console.log("내 userId(jti):", myUserId);
+                console.log("첫 번째 메시지 senderId:", chatHistory[0]?.senderId);
+                return (
+                    <div
+                        key={i}
+                        style={{
+                            display: "flex",
+                            flexDirection: isMe ? "row-reverse" : "row",
+                            alignItems: "flex-end",
+                            marginBottom: 10,
+                            gap: 8,
+                        }}>
+                        <div
+                            style={{
+                                background: isMe ? "#38d39f" : "#fff",
+                                color: isMe ? "#fff" : "#222",
+                                borderRadius: 13,
+                                padding: "9px 14px",
+                                minWidth: 44,
+                                maxWidth: 260,
+                                boxShadow: "0 1px 4px #0001",
+                                fontSize: 15,
+                                textAlign: "left"
+                            }}
+                        >
+                            {msg.message}
+                        </div>
+                        <div style={{
+                            fontSize: 12, color: "#aaa", marginBottom: 2, minWidth: 65,
+                            textAlign: isMe ? "right" : "left"
+                        }}>
+                            {msg.sendTime ? new Date(msg.sendTime).toLocaleTimeString() : ""}
+                        </div>
+                    </div>
+                );
+            })}
+        </div>
+    );
+}

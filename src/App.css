@@ -1,0 +1,26 @@
+.box {
+    max-width: 450px;
+    margin: 0 auto;
+    border: 1px solid #eee;
+    padding: 16px;
+    border-radius: 8px;
+    background: #fafbfc;
+}
+
+.input, .textarea {
+    width: 100%;
+    margin-bottom: 10px;
+}
+
+#chatArea {
+    border: 1px solid #ddd;
+    padding: 10px;
+    height: 160px;
+    overflow-y: auto;
+    background: #fff;
+    margin-bottom: 10px;
+}
+
+.button {
+    margin-right: 10px;
+}
