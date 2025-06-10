@@ -1,16 +1,15 @@
-const JWT_KEY = "jwt";
-const REFRESH_KEY = "refreshToken";
+const ACCESS_TOKEN_KEY = "accessToken";
+const REFRESH_TOKEN_KEY = "refreshToken";
 
 export const JwtManager = {
-    setTokens: ({ accessToken, refreshToken }) => {
-        localStorage.setItem(JWT_KEY, accessToken);
-        if (refreshToken) localStorage.setItem(REFRESH_KEY, refreshToken);
+    setJwt: (accessToken, refreshToken) => {
+        localStorage.setItem(ACCESS_TOKEN_KEY, accessToken);
+        localStorage.setItem(REFRESH_TOKEN_KEY, refreshToken);
     },
-    setJwt: (jwt) => localStorage.setItem(JWT_KEY, jwt),
-    getJwt: () => localStorage.getItem(JWT_KEY),
-    getRefreshToken: () => localStorage.getItem(REFRESH_KEY),
+    getJwt: () => localStorage.getItem(ACCESS_TOKEN_KEY),
+    getRefreshToken: () => localStorage.getItem(REFRESH_TOKEN_KEY),
     removeTokens: () => {
-        localStorage.removeItem(JWT_KEY);
-        localStorage.removeItem(REFRESH_KEY);
+        localStorage.removeItem(ACCESS_TOKEN_KEY);
+        localStorage.removeItem(REFRESH_TOKEN_KEY);
     }
 };
