@@ -5,6 +5,7 @@ import ProductDetailPage from "./pages/ProductDetailPage";
 import ChatRoomPage from "./pages/ChatRoomPage";
 import ChatRoomListPage from "./pages/ChatRoomListPage";
 import JwtInputModal from "./components/JwtInputModal";
+import SignUpPage from "./pages/SignUpPage";
 import { JwtManager } from "./utils/JwtManager";
 
 function App() {
@@ -31,6 +32,7 @@ function App() {
                 <Route path="/products/:id" element={<ProductDetailPage />} />
                 <Route path="/chat/:roomId" element={<ChatRoomPage />} />
                 <Route path="/chat/rooms" element={<ChatRoomListPage />} />
+                <Route path="/signup" element={<SignUpPage />} /> {/* 회원가입 추가 */}
             </Routes>
         </BrowserRouter>
     );

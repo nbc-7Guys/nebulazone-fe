@@ -39,6 +39,12 @@ export default function HeaderNav() {
                     fontWeight: 500,
                     fontSize: 16,
                 }}>채팅방</Link>
+                <Link to="/signup" style={{
+                    color: "#1986F8",
+                    fontWeight: 500,
+                    marginLeft: 22,
+                    textDecoration: "none"
+                }}>회원가입</Link>
             </div>
         </nav>
     );
