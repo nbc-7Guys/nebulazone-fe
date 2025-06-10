@@ -1,8 +1,16 @@
-import React from "react";
+import React, {useEffect, useRef} from "react";
 import { getMyUserIdFromJwt } from "../utils/auth";
 
 export default function ChatHistory({ chatHistory }) {
     const myUserId = getMyUserIdFromJwt();
+    const chatEndRef = useRef(null);
+
+    // 채팅 기록이 바뀔 때마다 아래로 스크롤
+    useEffect(() => {
+        if (chatEndRef.current) {
+            chatEndRef.current.scrollIntoView({ behavior: "smooth" });
+        }
+    }, [chatHistory]);
 
     if (!chatHistory || chatHistory.length === 0)
         return <div style={{ color: "#888" }}>채팅 기록이 없습니다.</div>;
@@ -48,6 +56,7 @@ export default function ChatHistory({ chatHistory }) {
                     </div>
                 );
             })}
+            <div ref={chatEndRef} />
         </div>
     );
 }
