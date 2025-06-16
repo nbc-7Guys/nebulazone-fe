@@ -35,6 +35,9 @@ export default function HeaderNav() {
                 <div
                     onClick={() => navigate("/")}
                     style={{
+                        display: "flex",
+                        alignItems: "center",
+                        gap: "8px",
                         fontSize: "24px",
                         fontWeight: "bold",
                         color: "#38d39f",
@@ -42,7 +45,14 @@ export default function HeaderNav() {
                         userSelect: "none"
                     }}
                 >
-                    NebulaZone
+                    <img 
+                        src="/logo.png" 
+                        alt="NebulaZone"
+                        style={{
+                            height: "40px",
+                            objectFit: "contain"
+                        }}
+                    />
                 </div>
 
                 {/* 네비게이션 메뉴 */}

@@ -1,5 +1,6 @@
 import React, { useState } from "react";
 import HeaderNav from "../components/HeaderNav";
+import { ENV } from "../utils/env";
 
 const INIT_FORM = {
     email: "",
@@ -62,7 +63,7 @@ export default function SignUpPage() {
         };
 
         try {
-            const res = await fetch("http://localhost:8080/users/signup", {
+            const res = await fetch(`${ENV.API_BASE_URL}/users/signup`, {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify(payload)

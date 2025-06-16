@@ -3,6 +3,7 @@ import { useParams, useNavigate } from "react-router-dom";
 import { products } from "../mock/products";
 import HeaderNav from "../components/HeaderNav";
 import { JwtManager } from "../utils/JwtManager";
+import { ENV } from "../utils/env";
 
 export default function ProductDetailPage() {
     const { id } = useParams();
@@ -30,7 +31,7 @@ export default function ProductDetailPage() {
         setLoading(true);
         setErrorMsg("");
         try {
-            const res = await fetch("http://localhost:8080/chat/rooms", {
+            const res = await fetch(`${ENV.API_BASE_URL}/chat/rooms`, {
                 method: "POST",
                 headers: {
                     "Content-Type": "application/json",

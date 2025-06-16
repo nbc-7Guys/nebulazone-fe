@@ -1,6 +1,7 @@
 import { JwtManager } from "../utils/JwtManager";
+import { ENV } from "../utils/env";
 
-const BASE_URL = "http://localhost:8080";
+const BASE_URL = ENV.API_BASE_URL;
 
 // API 호출 헬퍼 함수
 const apiCall = async (url, options = {}) => {

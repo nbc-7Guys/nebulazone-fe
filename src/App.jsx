@@ -2,6 +2,7 @@ import React, { useState } from "react";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import ProductListPage from "./pages/ProductListPage";
 import ProductDetailPage from "./pages/ProductDetailPage";
+import ProductCreatePage from "./pages/ProductCreatePage";
 import ChatRoomPage from "./pages/ChatRoomPage";
 import ChatRoomListPage from "./pages/ChatRoomListPage";
 import SignUpPage from "./pages/SignUpPage";
@@ -13,6 +14,7 @@ function App() {
         <BrowserRouter>
             <Routes>
                 <Route path="/" element={<ProductListPage />} />
+                <Route path="/products/create" element={<ProductCreatePage />} />
                 <Route path="/products/:id" element={<ProductDetailPage />} />
                 <Route path="/chat/:roomId" element={<ChatRoomPage />} />
                 <Route path="/chat/rooms" element={<ChatRoomListPage />} />

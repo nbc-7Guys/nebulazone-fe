@@ -6,6 +6,7 @@ import HeaderNav from "../components/HeaderNav";
 import ChatHistory from "../components/ChatHistory";
 import ChatInput from "../components/ChatInput";
 import { JwtManager } from "../utils/JwtManager";
+import { ENV } from "../utils/env";
 
 export default function ChatRoomPage() {
     const navigate = useNavigate();
@@ -27,7 +28,7 @@ export default function ChatRoomPage() {
             navigate("/", { replace: true });
             return;
         }
-        fetch(`http://localhost:8080/chat/rooms/history/${roomId}`, {
+        fetch(`${ENV.API_BASE_URL}/chat/rooms/history/${roomId}`, {
             headers: {
                 "Authorization": "Bearer " + jwt,
             }
@@ -44,7 +45,7 @@ export default function ChatRoomPage() {
     useEffect(() => {
         if (!jwt) return;
 
-        const socket = new SockJS("http://localhost:8080/ws");
+        const socket = new SockJS(`${ENV.API_BASE_URL}/ws`);
         const client = new Client({
             webSocketFactory: () => socket,
             connectHeaders: { Authorization: "Bearer " + jwt },

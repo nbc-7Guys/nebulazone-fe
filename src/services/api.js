@@ -1,6 +1,7 @@
 import { JwtManager } from '../utils/JwtManager';
+import { ENV } from '../utils/env';
 
-const BASE_URL = 'http://localhost:8080';
+const BASE_URL = ENV.API_BASE_URL;
 
 // API 요청 헬퍼 함수
 const apiRequest = async (endpoint, options = {}) => {
@@ -94,7 +95,12 @@ export const productApi = {
     // 상품 등록
     createProduct: (catalogId, productData, images) => {
         const formData = new FormData();
-        formData.append('product', JSON.stringify(productData));
+        
+        // JSON 파트에 Content-Type 명시적으로 설정
+        const productBlob = new Blob([JSON.stringify(productData)], {
+            type: 'application/json'
+        });
+        formData.append('product', productBlob);
         
         if (images && images.length > 0) {
             images.forEach(image => {
@@ -102,19 +108,39 @@ export const productApi = {
             });
         }
 
-        return apiRequest(`/catalogs/${catalogId}/products`, {
+        const jwt = JwtManager.getJwt();
+        
+        return fetch(`${BASE_URL}/catalogs/${catalogId}/products`, {
             method: 'POST',
             body: formData,
             headers: {
-                Authorization: `Bearer ${JwtManager.getJwt()}`,
+                ...(jwt && { Authorization: `Bearer ${jwt}` }),
             },
+        }).then(response => {
+            if (response.status === 401) {
+                JwtManager.removeTokens();
+                window.location.href = '/login';
+                return;
+            }
+            if (!response.ok) {
+                throw new Error(`API Error: ${response.status}`);
+            }
+            return response.json();
+        }).catch(error => {
+            console.error('API Request Error:', error);
+            throw error;
         });
     },
 
     // 상품 수정
     updateProduct: (catalogId, productId, productData, images) => {
         const formData = new FormData();
-        formData.append('product', JSON.stringify(productData));
+        
+        // JSON 파트에 Content-Type 명시적으로 설정
+        const productBlob = new Blob([JSON.stringify(productData)], {
+            type: 'application/json'
+        });
+        formData.append('product', productBlob);
         
         if (images && images.length > 0) {
             images.forEach(image => {
@@ -122,12 +148,27 @@ export const productApi = {
             });
         }
 
-        return apiRequest(`/catalogs/${catalogId}/products/${productId}`, {
+        const jwt = JwtManager.getJwt();
+        
+        return fetch(`${BASE_URL}/catalogs/${catalogId}/products/${productId}`, {
             method: 'PUT',
             body: formData,
             headers: {
-                Authorization: `Bearer ${JwtManager.getJwt()}`,
+                ...(jwt && { Authorization: `Bearer ${jwt}` }),
             },
+        }).then(response => {
+            if (response.status === 401) {
+                JwtManager.removeTokens();
+                window.location.href = '/login';
+                return;
+            }
+            if (!response.ok) {
+                throw new Error(`API Error: ${response.status}`);
+            }
+            return response.json();
+        }).catch(error => {
+            console.error('API Request Error:', error);
+            throw error;
         });
     },
 

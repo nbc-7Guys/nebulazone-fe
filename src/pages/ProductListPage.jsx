@@ -6,7 +6,7 @@ import Pagination from "../components/Pagination";
 import LoadingSpinner from "../components/LoadingSpinner";
 import ErrorMessage from "../components/ErrorMessage";
 import EmptyState from "../components/EmptyState";
-import { productApi, catalogApi } from "../services/api";
+import { productApi } from "../services/api";
 
 export default function ProductListPage() {
     const navigate = useNavigate();

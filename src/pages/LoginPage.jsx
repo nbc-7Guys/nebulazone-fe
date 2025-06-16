@@ -2,6 +2,7 @@ import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import HeaderNav from "../components/HeaderNav";
 import { JwtManager } from "../utils/JwtManager";
+import { ENV } from "../utils/env";
 
 const INIT_FORM = { email: "", password: "" };
 
@@ -21,7 +22,7 @@ export default function LoginPage() {
         setErrMsg("");
         setLoading(true);
         try {
-            const res = await fetch("http://localhost:8080/auth/signin", {
+            const res = await fetch(`${ENV.API_BASE_URL}/auth/signin`, {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({

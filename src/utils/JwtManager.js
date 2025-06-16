@@ -1,3 +1,5 @@
+import { ENV } from "./env";
+
 const ACCESS_TOKEN_KEY = "accessToken";
 const REFRESH_TOKEN_KEY = "refreshToken";
 
@@ -41,7 +43,7 @@ export const JwtManager = {
         const isValid = JwtManager.isTokenValid();
         if (!isValid) {
             try {
-                const response = await fetch('http://localhost:8080/auth/reissue', {
+                const response = await fetch(`${ENV.API_BASE_URL}/auth/reissue`, {
                     method: 'POST',
                     credentials: 'include'
                 });

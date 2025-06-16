@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import SockJS from 'sockjs-client/dist/sockjs';
 import { Client } from '@stomp/stompjs';
 import { JwtManager } from '../utils/JwtManager';
+import { ENV } from '../utils/env';
 
 export const useWebSocket = () => {
     const [isConnected, setIsConnected] = useState(false);
@@ -16,7 +17,7 @@ export const useWebSocket = () => {
                 return;
             }
 
-            const socket = new SockJS('http://localhost:8080/ws');
+            const socket = new SockJS(`${ENV.API_BASE_URL}/ws`);
             const client = new Client({
                 webSocketFactory: () => socket,
                 connectHeaders: { Authorization: `Bearer ${jwt}` },
