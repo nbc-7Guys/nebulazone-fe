@@ -20,8 +20,6 @@ export default function ChatHistory({ chatHistory }) {
             {chatHistory.map((msg, i) => {
                 // msg.userId(혹은 senderId, 실제 백엔드 응답에 맞게)
                 const isMe = String(msg.senderId) === String(myUserId);
-                console.log("내 userId(jti):", myUserId);
-                console.log("첫 번째 메시지 senderId:", chatHistory[0]?.senderId);
                 return (
                     <div
                         key={i}

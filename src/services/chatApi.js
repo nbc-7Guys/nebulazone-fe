@@ -1,35 +1,54 @@
+import axios from 'axios';
 import { JwtManager } from "../utils/JwtManager";
 import { ENV } from "../utils/env";
 
 const BASE_URL = ENV.API_BASE_URL;
 
-// API 호출 헬퍼 함수
-const apiCall = async (url, options = {}) => {
-    const token = JwtManager.getJwt();
-    
-    const defaultOptions = {
-        headers: {
-            'Authorization': `Bearer ${token}`,
-            'Content-Type': 'application/json',
-            ...options.headers
-        }
-    };
+// Axios 인스턴스 생성
+const axiosInstance = axios.create({
+    baseURL: BASE_URL,
+    headers: {
+        'Content-Type': 'application/json',
+    },
+});
 
-    try {
-        const response = await fetch(url, { ...defaultOptions, ...options });
-        
-        if (response.status === 401) {
+// 요청 인터셉터 - JWT 토큰 자동 추가
+axiosInstance.interceptors.request.use(
+    (config) => {
+        const token = JwtManager.getJwt();
+        if (token) {
+            config.headers.Authorization = `Bearer ${token}`;
+        }
+        return config;
+    },
+    (error) => {
+        return Promise.reject(error);
+    }
+);
+
+// 응답 인터셉터 - 401 에러 처리
+axiosInstance.interceptors.response.use(
+    (response) => {
+        return response;
+    },
+    (error) => {
+        if (error.response && error.response.status === 401) {
             // 토큰 만료 시 로그인 페이지로 리다이렉트
             JwtManager.removeTokens();
             window.location.href = '/login';
             throw new Error('인증이 만료되었습니다.');
         }
         
-        if (!response.ok) {
-            throw new Error(`API 호출 실패: ${response.status}`);
-        }
-        
-        return await response.json();
+        console.error('API 호출 에러:', error);
+        throw error;
+    }
+);
+
+// API 호출 헬퍼 함수
+const apiCall = async (url, options = {}) => {
+    try {
+        const response = await axiosInstance(url, options);
+        return response.data;
     } catch (error) {
         console.error('API 호출 에러:', error);
         throw error;
@@ -40,25 +59,25 @@ const apiCall = async (url, options = {}) => {
 export const chatApi = {
     // 채팅방 생성 또는 기존 채팅방 조회
     createOrGetChatRoom: async (productId) => {
-        return await apiCall(`${BASE_URL}/chat/rooms`, {
+        return await apiCall('/chat/rooms', {
             method: 'POST',
-            body: JSON.stringify({ productId })
+            data: { productId }
         });
     },
 
     // 내 채팅방 목록 조회
     getChatRooms: async () => {
-        return await apiCall(`${BASE_URL}/chat/rooms`);
+        return await apiCall('/chat/rooms');
     },
 
     // 채팅 내역 조회
     getChatHistory: async (roomId) => {
-        return await apiCall(`${BASE_URL}/chat/rooms/history/${roomId}`);
+        return await apiCall(`/chat/rooms/history/${roomId}`);
     },
 
     // 채팅방 나가기
     leaveChatRoom: async (roomId) => {
-        return await apiCall(`${BASE_URL}/chat/rooms/${roomId}`, {
+        return await apiCall(`/chat/rooms/${roomId}`, {
             method: 'DELETE'
         });
     }

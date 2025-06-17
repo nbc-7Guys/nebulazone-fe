@@ -1,38 +1,84 @@
+import axios from 'axios';
 import { JwtManager } from '../utils/JwtManager';
 import { ENV } from '../utils/env';
+import { getMyUserIdFromJwt } from '../utils/auth';
+import { ErrorHandler } from '../utils/errorHandler';
 
 const BASE_URL = ENV.API_BASE_URL;
 
-// API 요청 헬퍼 함수
-const apiRequest = async (endpoint, options = {}) => {
-    const jwt = JwtManager.getJwt();
-    
-    const config = {
-        ...options,
-        headers: {
-            'Content-Type': 'application/json',
-            ...(jwt && { Authorization: `Bearer ${jwt}` }),
-            ...options.headers,
-        },
-    };
+// Axios 인스턴스 생성
+const axiosInstance = axios.create({
+    baseURL: BASE_URL,
+    headers: {
+        'Content-Type': 'application/json',
+    },
+});
 
-    try {
-        const response = await fetch(`${BASE_URL}${endpoint}`, config);
-        
-        if (response.status === 401) {
-            // 토큰 만료 시 로그인 페이지로 리다이렉트
+// 요청 인터셉터 - JWT 토큰 자동 추가
+axiosInstance.interceptors.request.use(
+    (config) => {
+        const jwt = JwtManager.getJwt();
+        if (jwt) {
+            config.headers.Authorization = `Bearer ${jwt}`;
+        }
+        return config;
+    },
+    (error) => {
+        return Promise.reject(error);
+    }
+);
+
+// 응답 인터셉터 - 에러 처리
+axiosInstance.interceptors.response.use(
+    (response) => {
+        return response;
+    },
+    (error) => {
+        // JWT 에러인지 확인
+        if (ErrorHandler.isJwtError(error)) {
+            console.warn('JWT Error detected:', error.response?.data?.message);
             JwtManager.removeTokens();
             window.location.href = '/login';
-            return;
+            return Promise.reject(error);
         }
 
-        if (!response.ok) {
-            throw new Error(`API Error: ${response.status}`);
+        // 401 에러 처리 (일반적인 인증 실패)
+        if (error.response && error.response.status === 401) {
+            JwtManager.removeTokens();
+            window.location.href = '/login';
+            return Promise.reject(error);
         }
 
-        return await response.json();
+        // 에러 로깅
+        console.error('API Request Error:', ErrorHandler.handleApiError(error));
+        return Promise.reject(error);
+    }
+);
+
+// API 요청 헬퍼 함수
+const apiRequest = async (endpoint, options = {}) => {
+    try {
+        const response = await axiosInstance(endpoint, options);
+        return response.data;
     } catch (error) {
-        console.error('API Request Error:', error);
+        // 구체적인 에러 정보 추가
+        const errorInfo = ErrorHandler.handleApiError(error);
+        console.error(`API Request Failed [${endpoint}]:`, errorInfo);
+        
+        // 원본 에러에 추가 정보 첨부
+        error.errorInfo = errorInfo;
+        throw error;
+    }
+};
+
+// 에러를 포함한 API 요청 헬퍼 함수 (에러 알림 자동 표시)
+const apiRequestWithAlert = async (endpoint, options = {}, showAlert = true) => {
+    try {
+        return await apiRequest(endpoint, options);
+    } catch (error) {
+        if (showAlert) {
+            ErrorHandler.showErrorAlert(error);
+        }
         throw error;
     }
 };
@@ -40,11 +86,18 @@ const apiRequest = async (endpoint, options = {}) => {
 // 인증 관련 API
 export const authApi = {
     // 로그인
-    signIn: (email, password) =>
-        apiRequest('/auth/signin', {
-            method: 'POST',
-            body: JSON.stringify({ email, password }),
-        }),
+    signIn: async (email, password) => {
+        try {
+            return await apiRequest('/auth/signin', {
+                method: 'POST',
+                data: { email, password },
+            });
+        } catch (error) {
+            // 로그인 실패 시 구체적인 메시지 표시
+            const errorInfo = ErrorHandler.handleApiError(error);
+            throw new Error(errorInfo.message);
+        }
+    },
 
     // 로그아웃
     signOut: () =>
@@ -53,23 +106,31 @@ export const authApi = {
         }),
 
     // 토큰 재발급
-    reissueToken: () =>
-        fetch(`${BASE_URL}/auth/reissue`, {
-            method: 'POST',
-            credentials: 'include', // 쿠키 포함
-        }).then(response => {
-            if (!response.ok) {
-                throw new Error('토큰 재발급 실패');
-            }
-            return response.json();
-        }),
+    reissueToken: async () => {
+        try {
+            const response = await axios.post(`${BASE_URL}/auth/reissue`, {}, {
+                withCredentials: true, // 쿠키 포함
+            });
+            return response.data;
+        } catch (error) {
+            const errorInfo = ErrorHandler.handleApiError(error);
+            throw new Error(errorInfo.message || '토큰 재발급 실패');
+        }
+    },
 
     // 회원가입
-    signUp: (userData) =>
-        apiRequest('/users/signup', {
-            method: 'POST',
-            body: JSON.stringify(userData),
-        }),
+    signUp: async (userData) => {
+        try {
+            return await apiRequest('/users/signup', {
+                method: 'POST',
+                data: userData,
+            });
+        } catch (error) {
+            // 회원가입 실패 시 구체적인 메시지 표시
+            const errorInfo = ErrorHandler.handleApiError(error);
+            throw new Error(errorInfo.message);
+        }
+    },
 };
 
 // 상품 관련 API
@@ -93,7 +154,7 @@ export const productApi = {
         apiRequest(`/catalogs/${catalogId}/products/${productId}`),
 
     // 상품 등록
-    createProduct: (catalogId, productData, images) => {
+    createProduct: async (catalogId, productData, images) => {
         const formData = new FormData();
         
         // JSON 파트에 Content-Type 명시적으로 설정
@@ -108,32 +169,21 @@ export const productApi = {
             });
         }
 
-        const jwt = JwtManager.getJwt();
-        
-        return fetch(`${BASE_URL}/catalogs/${catalogId}/products`, {
-            method: 'POST',
-            body: formData,
-            headers: {
-                ...(jwt && { Authorization: `Bearer ${jwt}` }),
-            },
-        }).then(response => {
-            if (response.status === 401) {
-                JwtManager.removeTokens();
-                window.location.href = '/login';
-                return;
-            }
-            if (!response.ok) {
-                throw new Error(`API Error: ${response.status}`);
-            }
-            return response.json();
-        }).catch(error => {
-            console.error('API Request Error:', error);
-            throw error;
-        });
+        try {
+            const response = await axiosInstance.post(`/catalogs/${catalogId}/products`, formData, {
+                headers: {
+                    'Content-Type': 'multipart/form-data',
+                },
+            });
+            return response.data;
+        } catch (error) {
+            const errorInfo = ErrorHandler.handleApiError(error);
+            throw new Error(errorInfo.message);
+        }
     },
 
     // 상품 수정
-    updateProduct: (catalogId, productId, productData, images) => {
+    updateProduct: async (catalogId, productId, productData, images) => {
         const formData = new FormData();
         
         // JSON 파트에 Content-Type 명시적으로 설정
@@ -148,28 +198,17 @@ export const productApi = {
             });
         }
 
-        const jwt = JwtManager.getJwt();
-        
-        return fetch(`${BASE_URL}/catalogs/${catalogId}/products/${productId}`, {
-            method: 'PUT',
-            body: formData,
-            headers: {
-                ...(jwt && { Authorization: `Bearer ${jwt}` }),
-            },
-        }).then(response => {
-            if (response.status === 401) {
-                JwtManager.removeTokens();
-                window.location.href = '/login';
-                return;
-            }
-            if (!response.ok) {
-                throw new Error(`API Error: ${response.status}`);
-            }
-            return response.json();
-        }).catch(error => {
-            console.error('API Request Error:', error);
-            throw error;
-        });
+        try {
+            const response = await axiosInstance.put(`/catalogs/${catalogId}/products/${productId}`, formData, {
+                headers: {
+                    'Content-Type': 'multipart/form-data',
+                },
+            });
+            return response.data;
+        } catch (error) {
+            const errorInfo = ErrorHandler.handleApiError(error);
+            throw new Error(errorInfo.message);
+        }
     },
 
     // 상품 삭제
@@ -179,17 +218,16 @@ export const productApi = {
         }),
 
     // 상품 구매
-    purchaseProduct: (catalogId, productId) =>
-        apiRequest(`/catalogs/${catalogId}/products/${productId}/purchase`, {
-            method: 'POST',
-        }),
-
-    // 경매로 전환
-    changeToAuction: (catalogId, productId, auctionData) =>
-        apiRequest(`/catalogs/${catalogId}/products/${productId}/auction-type`, {
-            method: 'PATCH',
-            body: JSON.stringify(auctionData),
-        }),
+    purchaseProduct: async (catalogId, productId) => {
+        try {
+            return await apiRequest(`/catalogs/${Number(catalogId)}/products/${Number(productId)}/purchase`, {
+                method: 'POST',
+            });
+        } catch (error) {
+            const errorInfo = ErrorHandler.handleApiError(error);
+            throw new Error(errorInfo.message);
+        }
+    },
 };
 
 // 경매 관련 API
@@ -212,7 +250,7 @@ export const auctionApi = {
     endAuction: (auctionId, endData) =>
         apiRequest(`/auctions/${auctionId}/manual-end`, {
             method: 'PATCH',
-            body: JSON.stringify(endData),
+            data: endData,
         }),
 
     // 정렬별 경매 조회
@@ -223,21 +261,33 @@ export const auctionApi = {
 // 입찰 관련 API
 export const bidApi = {
     // 입찰하기
-    createBid: (bidData) =>
-        apiRequest('/bids', {
-            method: 'POST',
-            body: JSON.stringify(bidData),
-        }),
+    createBid: async (bidData) => {
+        try {
+            return await apiRequest('/bids', {
+                method: 'POST',
+                data: bidData,
+            });
+        } catch (error) {
+            const errorInfo = ErrorHandler.handleApiError(error);
+            throw new Error(errorInfo.message);
+        }
+    },
 
     // 내 입찰 목록
     getMyBids: (page = 1, size = 10) =>
         apiRequest(`/bids/my?page=${page}&size=${size}`),
 
     // 입찰 취소
-    deleteBid: (bidId) =>
-        apiRequest(`/bids/${bidId}`, {
-            method: 'DELETE',
-        }),
+    deleteBid: async (bidId) => {
+        try {
+            return await apiRequest(`/bids/${bidId}`, {
+                method: 'DELETE',
+            });
+        } catch (error) {
+            const errorInfo = ErrorHandler.handleApiError(error);
+            throw new Error(errorInfo.message);
+        }
+    },
 };
 
 // 카테고리 관련 API
@@ -265,11 +315,17 @@ export const chatApi = {
         apiRequest('/chat/rooms'),
 
     // 채팅방 생성 또는 기존 채팅방 조회
-    createOrGetChatRoom: (productId) =>
-        apiRequest('/chat/rooms', {
-            method: 'POST',
-            body: JSON.stringify({ productId }),
-        }),
+    createOrGetChatRoom: async (productId) => {
+        try {
+            return await apiRequest('/chat/rooms', {
+                method: 'POST',
+                data: { productId },
+            });
+        } catch (error) {
+            const errorInfo = ErrorHandler.handleApiError(error);
+            throw new Error(errorInfo.message);
+        }
+    },
 
     // 채팅 기록 조회
     getChatHistory: (roomId) =>
@@ -284,50 +340,84 @@ export const chatApi = {
 
 // 사용자 관련 API
 export const userApi = {
-    // 내 정보 조회
-    getMyProfile: () =>
-        apiRequest('/users/me'),
+    // 내 정보 조회 (현재 사용자 ID를 사용해서 조회)
+    getMyProfile: async () => {
+        const userId = getMyUserIdFromJwt();
+        if (!userId) {
+            throw new Error('로그인이 필요합니다.');
+        }
+        try {
+            return await apiRequest(`/users/${userId}`);
+        } catch (error) {
+            const errorInfo = ErrorHandler.handleApiError(error);
+            throw new Error(errorInfo.message);
+        }
+    },
 
     // 사용자 정보 조회
     getUserProfile: (userId) =>
         apiRequest(`/users/${userId}`),
 
-    // 프로필 수정
-    updateProfile: (userData) =>
-        apiRequest('/users', {
-            method: 'PATCH',
-            body: JSON.stringify(userData),
-        }),
+    // 프로필 수정 (닉네임 또는 비밀번호)
+    updateProfile: async (userData) => {
+        try {
+            return await apiRequest('/users', {
+                method: 'PATCH',
+                data: userData,
+            });
+        } catch (error) {
+            const errorInfo = ErrorHandler.handleApiError(error);
+            throw new Error(errorInfo.message);
+        }
+    },
 
     // 프로필 이미지 업데이트
-    updateProfileImage: (imageFile) => {
+    updateProfileImage: async (imageFile) => {
         const formData = new FormData();
         formData.append('profileImage', imageFile);
         
-        return apiRequest('/users', {
-            method: 'PUT',
-            body: formData,
-            headers: {
-                Authorization: `Bearer ${JwtManager.getJwt()}`,
-            },
-        });
+        try {
+            const response = await axiosInstance.put('/users', formData, {
+                headers: {
+                    'Content-Type': 'multipart/form-data',
+                },
+            });
+            return response.data;
+        } catch (error) {
+            const errorInfo = ErrorHandler.handleApiError(error);
+            throw new Error(errorInfo.message);
+        }
     },
 
     // 회원 탈퇴
-    withdraw: (password) =>
-        apiRequest('/users', {
-            method: 'DELETE',
-            body: JSON.stringify({ password }),
-        }),
+    withdraw: async (password) => {
+        try {
+            return await apiRequest('/users', {
+                method: 'DELETE',
+                data: { password },
+            });
+        } catch (error) {
+            const errorInfo = ErrorHandler.handleApiError(error);
+            throw new Error(errorInfo.message);
+        }
+    },
 };
 
 // 거래 관련 API
 export const transactionApi = {
-    // 거래 내역 조회
+    // 내 거래 내역 조회
+    getMyTransactions: (page = 1, size = 20) =>
+        apiRequest(`/transactions/me?page=${page}&size=${size}`),
+
+    // 내 거래 상세 조회
+    getMyTransaction: (transactionId) =>
+        apiRequest(`/transactions/${transactionId}/me`),
+
+    // 일반 거래 내역 조회 (관리자용)
     getTransactions: (page = 1, size = 10) =>
         apiRequest(`/transactions?page=${page}&size=${size}`),
 
-    // 거래 상세 조회
+    // 일반 거래 상세 조회 (관리자용)
     getTransaction: (transactionId) =>
         apiRequest(`/transactions/${transactionId}`),
 };
@@ -346,9 +436,18 @@ export const pointApi = {
         apiRequest(`/point-history?page=${page}&size=${size}`),
 
     // 포인트 충전
-    chargePoint: (pointData) =>
-        apiRequest('/point-history/charge', {
-            method: 'POST',
-            body: JSON.stringify(pointData),
-        }),
+    chargePoint: async (pointData) => {
+        try {
+            return await apiRequest('/point-history/charge', {
+                method: 'POST',
+                data: pointData,
+            });
+        } catch (error) {
+            const errorInfo = ErrorHandler.handleApiError(error);
+            throw new Error(errorInfo.message);
+        }
+    },
 };
+
+// 추가로 개발된 에러 처리 유틸리티 함수들을 export
+export { ErrorHandler, apiRequestWithAlert };

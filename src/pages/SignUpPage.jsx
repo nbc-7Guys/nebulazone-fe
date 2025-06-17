@@ -1,6 +1,8 @@
 import React, { useState } from "react";
+import axios from "axios";
 import HeaderNav from "../components/HeaderNav";
 import { ENV } from "../utils/env";
+import { ErrorHandler, ToastManager } from "../utils/errorHandler";
 
 const INIT_FORM = {
     email: "",
@@ -63,16 +65,30 @@ export default function SignUpPage() {
         };
 
         try {
-            const res = await fetch(`${ENV.API_BASE_URL}/users/signup`, {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify(payload)
+            await axios.post(`${ENV.API_BASE_URL}/users/signup`, payload, {
+                headers: { "Content-Type": "application/json" }
             });
-            if (!res.ok) throw new Error("회원가입 실패");
             setSuccess(true);
             setForm(INIT_FORM);
-        } catch {
-            setErrMsg("회원가입에 실패했습니다. (이미 사용중인 이메일일 수 있습니다)");
+            ToastManager.success("회원가입이 완료되었습니다!");
+        } catch (error) {
+            console.error("회원가입 실패:", error);
+            const errorInfo = ErrorHandler.handleApiError(error);
+            
+            // 구체적인 에러 메시지 설정
+            if (errorInfo.status === 409) {
+                if (errorInfo.message && errorInfo.message.includes('이메일')) {
+                    setErrMsg("이미 사용 중인 이메일입니다.");
+                } else if (errorInfo.message && errorInfo.message.includes('닉네임')) {
+                    setErrMsg("이미 사용 중인 닉네임입니다.");
+                } else {
+                    setErrMsg("이미 존재하는 정보입니다. 다른 이메일이나 닉네임을 사용해주세요.");
+                }
+            } else if (errorInfo.status === 400) {
+                setErrMsg(errorInfo.message || "입력 정보를 확인해주세요.");
+            } else {
+                setErrMsg(errorInfo.message || "회원가입에 실패했습니다. 다시 시도해주세요.");
+            }
         } finally {
             setLoading(false);
         }

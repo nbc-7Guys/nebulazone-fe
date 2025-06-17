@@ -11,3 +11,17 @@ export function getMyUserIdFromJwt() {
         return null;
     }
 }
+
+export function getMyEmailFromJwt() {
+    const jwt = JwtManager.getJwt();
+    if (!jwt) return null;
+    try {
+        const decoded = jwtDecode(jwt);
+        console.log('JWT Decoded:', decoded); // 디버깅용
+        // JWT에서 이메일을 찾는 여러 시도
+        return decoded.email || decoded.sub || decoded.username || null;
+    } catch (error) {
+        console.error('JWT decode error:', error);
+        return null;
+    }
+}

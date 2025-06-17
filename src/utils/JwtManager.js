@@ -1,3 +1,4 @@
+import axios from 'axios';
 import { ENV } from "./env";
 
 const ACCESS_TOKEN_KEY = "accessToken";
@@ -43,13 +44,12 @@ export const JwtManager = {
         const isValid = JwtManager.isTokenValid();
         if (!isValid) {
             try {
-                const response = await fetch(`${ENV.API_BASE_URL}/auth/reissue`, {
-                    method: 'POST',
-                    credentials: 'include'
+                const response = await axios.post(`${ENV.API_BASE_URL}/auth/reissue`, {}, {
+                    withCredentials: true
                 });
                 
-                if (response.ok) {
-                    const data = await response.json();
+                if (response.status === 200) {
+                    const data = response.data;
                     JwtManager.setJwt(data.accessToken);
                     return true;
                 } else {

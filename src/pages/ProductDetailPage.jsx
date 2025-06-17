@@ -1,5 +1,6 @@
 import React, { useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
+import axios from "axios";
 import { products } from "../mock/products";
 import HeaderNav from "../components/HeaderNav";
 import { JwtManager } from "../utils/JwtManager";
@@ -31,18 +32,39 @@ export default function ProductDetailPage() {
         setLoading(true);
         setErrorMsg("");
         try {
-            const res = await fetch(`${ENV.API_BASE_URL}/chat/rooms`, {
-                method: "POST",
-                headers: {
-                    "Content-Type": "application/json",
-                    "Authorization": "Bearer " + jwt,
-                },
-                body: JSON.stringify({ productId: product.id }),
+            const response = await axios.post(`${ENV.API_BASE_URL}/chat/rooms`, 
+                { productId: product.id },
+                {
+                    headers: {
+                        "Content-Type": "application/json",
+                        "Authorization": "Bearer " + jwt,
+                    }
+                }
+            );
+            const data = response.data;
+            
+            // 서버 응답에서 받은 상품 정보로 완전한 product 객체 생성
+            const completeProduct = {
+                id: data.productId,
+                catalogId: data.catalogId,
+                name: data.productName,
+                price: data.productPrice,
+                image: product.image,
+                category: product.category,
+                description: product.description,
+                seller: {
+                    id: data.sellerId,
+                    name: data.sellerName
+                }
+            };
+            
+            navigate(`/chat/${data.chatRoomId}`, { 
+                state: { 
+                    product: completeProduct,
+                    chatRoomId: data.chatRoomId 
+                } 
             });
-            if (!res.ok) throw new Error("채팅방 생성 실패");
-            const data = await res.json();
-            navigate(`/chat/${data.chatRoomId}`, { state: { product, chatRoomId: data.chatRoomId } });
-        } catch (e) {
+        } catch (error) {
             setErrorMsg("채팅방 생성에 실패했습니다.");
         } finally {
             setLoading(false);

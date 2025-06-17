@@ -1,12 +1,13 @@
 import React from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { JwtManager } from "../utils/JwtManager";
-import { getMyUserIdFromJwt } from "../utils/auth";
+import { getMyEmailFromJwt, getMyUserIdFromJwt } from "../utils/auth";
 
 export default function HeaderNav() {
     const navigate = useNavigate();
     const location = useLocation();
     const jwt = JwtManager.getJwt();
+    const userEmail = getMyEmailFromJwt();
     const userId = getMyUserIdFromJwt();
 
     const handleLogout = () => {
@@ -75,6 +76,16 @@ export default function HeaderNav() {
                                 active={isActive("/products/create")}
                                 text="상품 등록"
                             />
+                            <NavLink
+                                onClick={() => navigate("/transactions")}
+                                active={isActive("/transactions")}
+                                text="거래내역"
+                            />
+                            <NavLink
+                                onClick={() => navigate("/mypage")}
+                                active={isActive("/mypage")}
+                                text="마이페이지"
+                            />
                         </>
                     )}
                 </div>
@@ -84,7 +95,7 @@ export default function HeaderNav() {
                     {jwt ? (
                         <>
                             <span style={{ fontSize: "14px", color: "#666" }}>
-                                사용자 ID: {userId}
+                                {userEmail || `사용자 ID: ${userId}`}
                             </span>
                             <button
                                 onClick={handleLogout}
