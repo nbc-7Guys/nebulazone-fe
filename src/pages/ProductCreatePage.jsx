@@ -9,14 +9,21 @@ import { JwtManager } from "../utils/JwtManager";
 export default function ProductCreatePage() {
     const navigate = useNavigate();
 
-    // 상태 관리
-    const [step, setStep] = useState('category'); // 'category', 'product', 'form'
+    // 기본 상태 관리
+    const [step, setStep] = useState('category');
     const [selectedCategory, setSelectedCategory] = useState('');
     const [selectedCatalog, setSelectedCatalog] = useState(null);
     const [catalogs, setCatalogs] = useState([]);
     const [catalogLoading, setCatalogLoading] = useState(false);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState('');
+
+    // 페이징 및 검색 상태
+    const [searchKeyword, setSearchKeyword] = useState('');
+    const [currentPage, setCurrentPage] = useState(1);
+    const [totalPages, setTotalPages] = useState(0);
+    const [totalElements, setTotalElements] = useState(0);
+    const pageSize = 12;
 
     // 상품 폼 데이터
     const [formData, setFormData] = useState({
@@ -40,22 +47,48 @@ export default function ProductCreatePage() {
         }
     }, [navigate]);
 
-    // 카테고리 선택 처리
-    const handleCategorySelect = async (categoryType) => {
-        setSelectedCategory(categoryType);
-        setStep('product');
+    // 카탈로그 데이터 로드 함수
+    const loadCatalogs = async (categoryType, keyword = '', page = 1) => {
         setCatalogLoading(true);
         setError('');
 
         try {
-            const response = await catalogApi.getCatalogs('', 1, 10, categoryType);
+            const response = await catalogApi.getCatalogs(keyword, page, pageSize, categoryType);
             setCatalogs(response.content || []);
+            setTotalPages(response.totalPages || 0);
+            setTotalElements(response.totalElements || 0);
+            setCurrentPage(page);
         } catch (error) {
             console.error('카탈로그 조회 실패:', error);
             setError('제품 목록을 불러오는데 실패했습니다.');
             setCatalogs([]);
+            setTotalPages(0);
+            setTotalElements(0);
         } finally {
             setCatalogLoading(false);
+        }
+    };
+
+    // 카테고리 선택 처리
+    const handleCategorySelect = async (categoryType) => {
+        setSelectedCategory(categoryType);
+        setStep('product');
+        setCurrentPage(1);
+        setSearchKeyword('');
+        await loadCatalogs(categoryType, '', 1);
+    };
+
+    // 검색 처리
+    const handleSearch = (e) => {
+        e.preventDefault();
+        setCurrentPage(1);
+        loadCatalogs(selectedCategory, searchKeyword, 1);
+    };
+
+    // 페이지 변경 처리
+    const handlePageChange = (newPage) => {
+        if (newPage >= 1 && newPage <= totalPages) {
+            loadCatalogs(selectedCategory, searchKeyword, newPage);
         }
     };
 
@@ -129,13 +162,13 @@ export default function ProductCreatePage() {
             const productData = {
                 name: formData.name,
                 description: formData.description,
-                price: parseInt(formData.price), // Long으로 변환됨
+                price: parseInt(formData.price),
                 type: formData.type,
-                endTime: formData.endTime || null // 입력하지 않으면 null
+                endTime: formData.endTime || null
             };
 
             await productApi.createProduct(selectedCatalog.catalogId, productData, images);
-            
+
             alert('상품이 성공적으로 등록되었습니다!');
             navigate('/');
 
@@ -155,9 +188,91 @@ export default function ProductCreatePage() {
             setStep('category');
             setSelectedCategory('');
             setCatalogs([]);
+            setSearchKeyword('');
+            setCurrentPage(1);
         } else {
             navigate('/');
         }
+    };
+
+    // 페이지네이션 컴포넌트
+    const Pagination = () => {
+        if (totalPages <= 1) return null;
+
+        const pageNumbers = [];
+        const maxVisiblePages = 5;
+
+        let startPage = Math.max(1, currentPage - Math.floor(maxVisiblePages / 2));
+        let endPage = Math.min(totalPages, startPage + maxVisiblePages - 1);
+
+        if (endPage - startPage + 1 < maxVisiblePages) {
+            startPage = Math.max(1, endPage - maxVisiblePages + 1);
+        }
+
+        for (let i = startPage; i <= endPage; i++) {
+            pageNumbers.push(i);
+        }
+
+        return (
+            <div style={{
+                display: "flex",
+                justifyContent: "center",
+                alignItems: "center",
+                gap: "8px",
+                marginTop: "32px"
+            }}>
+                <button
+                    onClick={() => handlePageChange(currentPage - 1)}
+                    disabled={currentPage === 1}
+                    style={{
+                        padding: "8px 12px",
+                        border: "1px solid #e2e8f0",
+                        borderRadius: "6px",
+                        backgroundColor: currentPage === 1 ? "#f7fafc" : "#fff",
+                        color: currentPage === 1 ? "#9ca3af" : "#4a5568",
+                        cursor: currentPage === 1 ? "not-allowed" : "pointer",
+                        fontSize: "14px"
+                    }}
+                >
+                    이전
+                </button>
+
+                {pageNumbers.map(pageNum => (
+                    <button
+                        key={pageNum}
+                        onClick={() => handlePageChange(pageNum)}
+                        style={{
+                            padding: "8px 12px",
+                            border: "1px solid #e2e8f0",
+                            borderRadius: "6px",
+                            backgroundColor: currentPage === pageNum ? "#38d39f" : "#fff",
+                            color: currentPage === pageNum ? "#fff" : "#4a5568",
+                            cursor: "pointer",
+                            fontSize: "14px",
+                            fontWeight: currentPage === pageNum ? "600" : "400"
+                        }}
+                    >
+                        {pageNum}
+                    </button>
+                ))}
+
+                <button
+                    onClick={() => handlePageChange(currentPage + 1)}
+                    disabled={currentPage === totalPages}
+                    style={{
+                        padding: "8px 12px",
+                        border: "1px solid #e2e8f0",
+                        borderRadius: "6px",
+                        backgroundColor: currentPage === totalPages ? "#f7fafc" : "#fff",
+                        color: currentPage === totalPages ? "#9ca3af" : "#4a5568",
+                        cursor: currentPage === totalPages ? "not-allowed" : "pointer",
+                        fontSize: "14px"
+                    }}
+                >
+                    다음
+                </button>
+            </div>
+        );
     };
 
     return (
@@ -200,7 +315,7 @@ export default function ProductCreatePage() {
                         color: "#718096"
                     }}>
                         {step === 'category' && '카테고리를 선택해주세요'}
-                        {step === 'product' && `${selectedCategory} 제품을 선택해주세요`}
+                        {step === 'product' && `${selectedCategory} 제품을 선택해주세요 (${totalElements}개 제품)`}
                         {step === 'form' && '상품 정보를 입력해주세요'}
                     </p>
                 </div>
@@ -217,7 +332,7 @@ export default function ProductCreatePage() {
                                 width: "32px",
                                 height: "32px",
                                 borderRadius: "50%",
-                                backgroundColor: step === stepName ? "#38d39f" : 
+                                backgroundColor: step === stepName ? "#38d39f" :
                                     ['category', 'product', 'form'].indexOf(step) > index ? "#38d39f" : "#e2e8f0",
                                 color: step === stepName || ['category', 'product', 'form'].indexOf(step) > index ? "#fff" : "#9ca3af",
                                 display: "flex",
@@ -329,6 +444,67 @@ export default function ProductCreatePage() {
                                 {selectedCategory} 제품을 선택하세요
                             </h2>
 
+                            {/* 검색바 */}
+                            <form onSubmit={handleSearch} style={{ marginBottom: "24px" }}>
+                                <div style={{
+                                    display: "flex",
+                                    gap: "12px",
+                                    alignItems: "center"
+                                }}>
+                                    <input
+                                        type="text"
+                                        value={searchKeyword}
+                                        onChange={(e) => setSearchKeyword(e.target.value)}
+                                        placeholder="제품명을 검색하세요..."
+                                        style={{
+                                            flex: 1,
+                                            padding: "12px 16px",
+                                            border: "1px solid #d1d5db",
+                                            borderRadius: "8px",
+                                            fontSize: "16px",
+                                            outline: "none"
+                                        }}
+                                    />
+                                    <button
+                                        type="submit"
+                                        disabled={catalogLoading}
+                                        style={{
+                                            padding: "12px 24px",
+                                            backgroundColor: catalogLoading ? "#9ca3af" : "#38d39f",
+                                            color: "#fff",
+                                            border: "none",
+                                            borderRadius: "8px",
+                                            fontSize: "16px",
+                                            cursor: catalogLoading ? "not-allowed" : "pointer",
+                                            fontWeight: "600"
+                                        }}
+                                    >
+                                        🔍 검색
+                                    </button>
+                                    {searchKeyword && (
+                                        <button
+                                            type="button"
+                                            onClick={() => {
+                                                setSearchKeyword('');
+                                                setCurrentPage(1);
+                                                loadCatalogs(selectedCategory, '', 1);
+                                            }}
+                                            style={{
+                                                padding: "12px 16px",
+                                                backgroundColor: "#f7fafc",
+                                                color: "#4a5568",
+                                                border: "1px solid #e2e8f0",
+                                                borderRadius: "8px",
+                                                fontSize: "14px",
+                                                cursor: "pointer"
+                                            }}
+                                        >
+                                            초기화
+                                        </button>
+                                    )}
+                                </div>
+                            </form>
+
                             {catalogLoading ? (
                                 <LoadingSpinner message="제품 목록을 불러오는 중..." />
                             ) : catalogs.length === 0 ? (
@@ -337,63 +513,73 @@ export default function ProductCreatePage() {
                                     padding: "40px",
                                     color: "#718096"
                                 }}>
-                                    등록된 {selectedCategory} 제품이 없습니다.
+                                    {searchKeyword ?
+                                        `"${searchKeyword}"에 대한 검색 결과가 없습니다.` :
+                                        `등록된 ${selectedCategory} 제품이 없습니다.`
+                                    }
                                 </div>
                             ) : (
-                                <div style={{
-                                    display: "grid",
-                                    gridTemplateColumns: "repeat(auto-fill, minmax(280px, 1fr))",
-                                    gap: "16px"
-                                }}>
-                                    {catalogs.map(catalog => (
-                                        <button
-                                            key={catalog.catalogId}
-                                            onClick={() => handleProductSelect(catalog)}
-                                            style={{
-                                                padding: "20px",
-                                                border: "1px solid #e2e8f0",
-                                                borderRadius: "8px",
-                                                backgroundColor: "#fff",
-                                                cursor: "pointer",
-                                                transition: "all 0.2s ease",
-                                                textAlign: "left"
-                                            }}
-                                            onMouseEnter={(e) => {
-                                                e.target.style.borderColor = "#38d39f";
-                                                e.target.style.backgroundColor = "#f0fdf4";
-                                            }}
-                                            onMouseLeave={(e) => {
-                                                e.target.style.borderColor = "#e2e8f0";
-                                                e.target.style.backgroundColor = "#fff";
-                                            }}
-                                        >
-                                            <div style={{
-                                                fontSize: "16px",
-                                                fontWeight: "600",
-                                                marginBottom: "8px",
-                                                color: "#1a202c"
-                                            }}>
-                                                {catalog.catalogName}
-                                            </div>
-                                            {catalog.catalogDescription && (
+                                <>
+                                    <div style={{
+                                        display: "grid",
+                                        gridTemplateColumns: "repeat(auto-fill, minmax(280px, 1fr))",
+                                        gap: "16px"
+                                    }}>
+                                        {catalogs.map(catalog => (
+                                            <button
+                                                key={catalog.catalogId}
+                                                onClick={() => handleProductSelect(catalog)}
+                                                style={{
+                                                    padding: "20px",
+                                                    border: "1px solid #e2e8f0",
+                                                    borderRadius: "8px",
+                                                    backgroundColor: "#fff",
+                                                    cursor: "pointer",
+                                                    transition: "all 0.2s ease",
+                                                    textAlign: "left"
+                                                }}
+                                                onMouseEnter={(e) => {
+                                                    e.target.style.borderColor = "#38d39f";
+                                                    e.target.style.backgroundColor = "#f0fdf4";
+                                                }}
+                                                onMouseLeave={(e) => {
+                                                    e.target.style.borderColor = "#e2e8f0";
+                                                    e.target.style.backgroundColor = "#fff";
+                                                }}
+                                            >
                                                 <div style={{
-                                                    fontSize: "14px",
-                                                    color: "#718096",
-                                                    marginBottom: "8px"
+                                                    fontSize: "16px",
+                                                    fontWeight: "600",
+                                                    marginBottom: "8px",
+                                                    color: "#1a202c",
+                                                    lineHeight: "1.4"
                                                 }}>
-                                                    {catalog.catalogDescription}
+                                                    {catalog.catalogName}
                                                 </div>
-                                            )}
-                                            <div style={{
-                                                fontSize: "12px",
-                                                color: "#a0aec0"
-                                            }}>
-                                                {catalog.manufacturer && `제조사: ${catalog.manufacturer}`}
-                                                {catalog.chipset && ` | 칩셋: ${catalog.chipset}`}
-                                            </div>
-                                        </button>
-                                    ))}
-                                </div>
+                                                {catalog.catalogDescription && (
+                                                    <div style={{
+                                                        fontSize: "14px",
+                                                        color: "#718096",
+                                                        marginBottom: "8px",
+                                                        lineHeight: "1.4"
+                                                    }}>
+                                                        {catalog.catalogDescription}
+                                                    </div>
+                                                )}
+                                                <div style={{
+                                                    fontSize: "12px",
+                                                    color: "#a0aec0"
+                                                }}>
+                                                    {catalog.manufacturer && `제조사: ${catalog.manufacturer}`}
+                                                    {catalog.chipset && ` | 칩셋: ${catalog.chipset}`}
+                                                </div>
+                                            </button>
+                                        ))}
+                                    </div>
+
+                                    {/* 페이지네이션 */}
+                                    <Pagination />
+                                </>
                             )}
                         </div>
                     )}
@@ -573,7 +759,7 @@ export default function ProductCreatePage() {
                                         type="datetime-local"
                                         value={formData.endTime}
                                         onChange={(e) => handleFormChange('endTime', e.target.value)}
-                                        min={new Date().toISOString().slice(0, 16)} // 현재 시간 이후만 선택 가능
+                                        min={new Date().toISOString().slice(0, 16)}
                                         style={{
                                             width: "100%",
                                             padding: "12px 16px",
@@ -604,7 +790,7 @@ export default function ProductCreatePage() {
                                 }}>
                                     상품 이미지 (선택사항, 최대 5개)
                                 </label>
-                                
+
                                 <input
                                     type="file"
                                     accept="image/*"
@@ -613,7 +799,7 @@ export default function ProductCreatePage() {
                                     style={{ display: "none" }}
                                     id="imageUpload"
                                 />
-                                
+
                                 <label
                                     htmlFor="imageUpload"
                                     style={{
@@ -697,7 +883,7 @@ export default function ProductCreatePage() {
                                 >
                                     이전
                                 </button>
-                                
+
                                 <button
                                     type="submit"
                                     disabled={loading}

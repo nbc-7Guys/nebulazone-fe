@@ -59,8 +59,8 @@ export default function HeaderNav() {
                 {/* 네비게이션 메뉴 */}
                 <div style={{ display: "flex", alignItems: "center", gap: "20px" }}>
                     <NavLink
-                        onClick={() => navigate("/")}
-                        active={isActive("/")}
+                        onClick={() => navigate("/products")}
+                        active={isActive("/products")}
                         text="상품 목록"
                     />
                     

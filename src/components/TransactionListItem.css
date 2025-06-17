@@ -82,6 +82,32 @@
     overflow: hidden;
 }
 
+.transaction-seller {
+    padding: 0.3rem 0.8rem;
+    background: linear-gradient(135deg, rgba(102, 126, 234, 0.1), rgba(118, 75, 162, 0.1));
+    border: 1px solid rgba(102, 126, 234, 0.2);
+    border-radius: 20px;
+    font-size: 0.75rem;
+    color: #667eea;
+    font-weight: 600;
+    white-space: nowrap;
+}
+
+.transaction-seller {
+    padding: 0.4rem 1rem;
+    border-radius: 50px;
+    font-size: 0.8rem;
+    font-weight: 700;
+    white-space: nowrap;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    position: relative;
+    overflow: hidden;
+    background: linear-gradient(135deg, #3b82f6, #854ad8);
+    color: white;
+    box-shadow: 0 4px 12px rgba(59, 130, 246, 0.4);
+}
+
 .status-purchased {
     background: linear-gradient(135deg, #3b82f6, #1d4ed8);
     color: white;

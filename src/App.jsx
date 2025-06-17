@@ -1,5 +1,6 @@
 import React, { useState } from "react";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
+import LandingPage from "./pages/LandingPage";
 import ProductListPage from "./pages/ProductListPage";
 import ProductDetailPage from "./pages/ProductDetailPage";
 import ProductCreatePage from "./pages/ProductCreatePage";
@@ -15,7 +16,8 @@ function App() {
     return (
         <BrowserRouter>
             <Routes>
-                <Route path="/" element={<ProductListPage />} />
+                <Route path="/" element={<LandingPage />} />
+                <Route path="/products" element={<ProductListPage />} />
                 <Route path="/products/create" element={<ProductCreatePage />} />
                 <Route path="/products/:id" element={<ProductDetailPage />} />
                 <Route path="/mypage" element={<MyPage />} />
@@ -23,7 +25,7 @@ function App() {
                 <Route path="/chat/rooms" element={<ChatRoomListPage />} />
                 <Route path="/transactions" element={<TransactionHistoryPage />} />
                 <Route path="/signup" element={<SignUpPage />} />
-                <Route path="/login" element={<LoginPage />} /> {/* 로그인 추가 */}
+                <Route path="/login" element={<LoginPage />} />
             </Routes>
         </BrowserRouter>
     );

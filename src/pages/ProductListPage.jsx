@@ -22,10 +22,10 @@ export default function ProductListPage() {
     // 검색/필터 상태
     const [searchForm, setSearchForm] = useState({
         type: searchParams.get('type') || 'DIRECT',
-        category: searchParams.get('category') || 'all',
-        keyword: searchParams.get('keyword') || '',
-        priceFrom: searchParams.get('priceFrom') || '',
-        priceTo: searchParams.get('priceTo') || '',
+        productname: searchParams.get('search') || searchParams.get('productname') || '',
+        sellernickname: searchParams.get('sellernickname') || '',
+        priceFrom: searchParams.get('from') || '',
+        priceTo: searchParams.get('to') || '',
         page: parseInt(searchParams.get('page')) || 1,
         size: 12
     });
@@ -37,15 +37,8 @@ export default function ProductListPage() {
         currentPage: 1
     });
 
-    // 카탈로그 목록 로드 - 제거 (카탈로그는 마스터 데이터이므로 불필요)
+    // 카탈로그 목록 로드 - 제거 (서버 파라미터와 맞지 않음)
     useEffect(() => {
-        // 카탈로그는 CPU, GPU, SSD 고정값으로 사용
-        const fixedCatalogs = [
-            { catalogId: 1, catalogName: 'CPU' },
-            { catalogId: 2, catalogName: 'GPU' },
-            { catalogId: 3, catalogName: 'SSD' }
-        ];
-        setCatalogs(fixedCatalogs);
         setCatalogLoading(false);
     }, []);
 
@@ -57,7 +50,8 @@ export default function ProductListPage() {
                 setError("");
 
                 const params = {
-                    name: searchForm.keyword || undefined,
+                    productname: searchForm.productname || undefined,
+                    sellernickname: searchForm.sellernickname || undefined,
                     type: searchForm.type,
                     from: searchForm.priceFrom || undefined,
                     to: searchForm.priceTo || undefined,
@@ -91,10 +85,10 @@ export default function ProductListPage() {
         const params = new URLSearchParams();
 
         if (searchForm.type !== 'DIRECT') params.set('type', searchForm.type);
-        if (searchForm.category !== 'all') params.set('category', searchForm.category);
-        if (searchForm.keyword) params.set('keyword', searchForm.keyword);
-        if (searchForm.priceFrom) params.set('priceFrom', searchForm.priceFrom);
-        if (searchForm.priceTo) params.set('priceTo', searchForm.priceTo);
+        if (searchForm.productname) params.set('search', searchForm.productname);
+        if (searchForm.sellernickname) params.set('sellernickname', searchForm.sellernickname);
+        if (searchForm.priceFrom) params.set('from', searchForm.priceFrom);
+        if (searchForm.priceTo) params.set('to', searchForm.priceTo);
         if (searchForm.page > 1) params.set('page', searchForm.page.toString());
 
         setSearchParams(params);
@@ -163,7 +157,7 @@ export default function ProductListPage() {
                 }}>
                     <div style={{
                         display: "grid",
-                        gridTemplateColumns: "auto auto 1fr auto",
+                        gridTemplateColumns: "auto 1fr 1fr auto",
                         gap: "12px",
                         alignItems: "center"
                     }}>
@@ -182,33 +176,28 @@ export default function ProductListPage() {
                             <option value="AUCTION">경매</option>
                         </select>
 
-                        {/* 카테고리 선택 */}
-                        <select
-                            value={searchForm.category}
-                            onChange={(e) => handleFormChange('category', e.target.value)}
-                            disabled={catalogLoading}
-                            style={{
-                                padding: "8px 12px",
-                                border: "1px solid #e2e8f0",
-                                borderRadius: "6px",
-                                fontSize: "14px",
-                                opacity: catalogLoading ? 0.7 : 1
-                            }}
-                        >
-                            <option value="all">전체 카테고리</option>
-                            {catalogs.map(catalog => (
-                                <option key={catalog.catalogId} value={catalog.catalogId}>
-                                    {catalog.catalogName}
-                                </option>
-                            ))}
-                        </select>
-
-                        {/* 검색어 입력 */}
+                        {/* 상품명 검색 */}
                         <input
                             type="text"
                             placeholder="상품명 검색..."
-                            value={searchForm.keyword}
-                            onChange={(e) => handleFormChange('keyword', e.target.value)}
+                            value={searchForm.productname}
+                            onChange={(e) => handleFormChange('productname', e.target.value)}
+                            onKeyPress={(e) => e.key === 'Enter' && handleSearch()}
+                            style={{
+                                padding: "8px 16px",
+                                border: "1px solid #e2e8f0",
+                                borderRadius: "6px",
+                                fontSize: "14px",
+                                outline: "none"
+                            }}
+                        />
+
+                        {/* 판매자 검색 */}
+                        <input
+                            type="text"
+                            placeholder="판매자 닉네임 검색..."
+                            value={searchForm.sellernickname}
+                            onChange={(e) => handleFormChange('sellernickname', e.target.value)}
                             onKeyPress={(e) => e.key === 'Enter' && handleSearch()}
                             style={{
                                 padding: "8px 16px",
@@ -328,8 +317,8 @@ export default function ProductListPage() {
                                 onClick={() => {
                                     setSearchForm({
                                         type: 'DIRECT',
-                                        category: 'all',
-                                        keyword: '',
+                                        productname: '',
+                                        sellernickname: '',
                                         priceFrom: '',
                                         priceTo: '',
                                         page: 1,

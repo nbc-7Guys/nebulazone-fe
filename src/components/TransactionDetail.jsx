@@ -59,10 +59,6 @@ const TransactionDetail = ({ transaction, onClose }) => {
                         <h3>거래 정보</h3>
                         <div className="detail-grid">
                             <div className="detail-item">
-                                <label>거래 ID</label>
-                                <span>{transaction.txId}</span>
-                            </div>
-                            <div className="detail-item">
                                 <label>거래 상태</label>
                                 <span className={`transaction-status ${getStatusClass(transaction.isSold)}`}>
                                     {getStatusText(transaction.isSold)}
@@ -74,7 +70,7 @@ const TransactionDetail = ({ transaction, onClose }) => {
                             </div>
                             <div className="detail-item">
                                 <label>결제 방법</label>
-                                <span>{getTransactionMethodText(transaction.txMethod)}</span>
+                                <span>{getTransactionMethodText(transaction.txMethod == "DIRECT" ? "즉시 구매" : "경매")}</span>
                             </div>
                             <div className="detail-item">
                                 <label>거래 일시</label>
@@ -86,10 +82,6 @@ const TransactionDetail = ({ transaction, onClose }) => {
                     <div className="detail-section">
                         <h3>상품 정보</h3>
                         <div className="detail-grid">
-                            <div className="detail-item">
-                                <label>상품 ID</label>
-                                <span>{transaction.productId}</span>
-                            </div>
                             <div className="detail-item">
                                 <label>상품명</label>
                                 <span className="product-name">{transaction.productName}</span>
@@ -104,10 +96,6 @@ const TransactionDetail = ({ transaction, onClose }) => {
                     <div className="detail-section">
                         <h3>판매자 정보</h3>
                         <div className="detail-grid">
-                            <div className="detail-item">
-                                <label>판매자 ID</label>
-                                <span>{transaction.sellerId}</span>
-                            </div>
                             <div className="detail-item">
                                 <label>판매자 닉네임</label>
                                 <span>{transaction.sellerNickname}</span>

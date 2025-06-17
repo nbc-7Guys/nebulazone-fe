@@ -138,7 +138,8 @@ export const productApi = {
     // 상품 목록 조회
     getProducts: (params = {}) => {
         const queryParams = new URLSearchParams();
-        if (params.name) queryParams.append('name', params.name);
+        if (params.productname) queryParams.append('productname', params.productname);
+        if (params.sellernickname) queryParams.append('sellernickname', params.sellernickname);
         if (params.type) queryParams.append('type', params.type);
         if (params.from) queryParams.append('from', params.from);
         if (params.to) queryParams.append('to', params.to);

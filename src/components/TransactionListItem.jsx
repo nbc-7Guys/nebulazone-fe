@@ -28,12 +28,17 @@ const TransactionListItem = ({ transaction, onClick }) => {
         }
     };
 
-    const getStatusText = (isSold) => {
-        return isSold ? '판매완료' : '구매완료';
+    const getStatusText = (userType) => {
+        return userType === 'SELLER' ? '판매완료' : '구매완료';
     };
 
-    const getStatusClass = (isSold) => {
-        return isSold ? 'status-sold' : 'status-purchased';
+    const getStatusClass = (userType) => {
+        return userType === 'SELLER' ? 'status-sold' : 'status-purchased';
+    };
+
+    // 현재 사용자가 판매자인지 확인 (userType 기준)
+    const isCurrentUserSeller = () => {
+        return transaction.userType === 'SELLER';
     };
 
     return (
@@ -42,9 +47,14 @@ const TransactionListItem = ({ transaction, onClick }) => {
                 <div className="transaction-main-info">
                     <div className="transaction-product">
                         <h4 className="product-name">{transaction.productName}</h4>
-                        <span className={`transaction-status ${getStatusClass(transaction.isSold)}`}>
-                            {getStatusText(transaction.isSold)}
+                        <span className={`transaction-status ${getStatusClass(transaction.userType)}`}>
+                            {getStatusText(transaction.userType)}
                         </span>
+                        {transaction.userType === 'BUYER' && transaction.userNickname && (
+                            <span className="transaction-seller">
+                                판매자: {transaction.userNickname}
+                            </span>
+                        )}
                     </div>
                     <div className="transaction-details">
                         <span className="transaction-price">
