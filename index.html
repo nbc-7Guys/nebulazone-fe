@@ -11,6 +11,12 @@
     <title>NebulaZone - 중고 PC 부품 거래</title>
   </head>
   <body>
+    <script>
+      // SockJS-client를 위한 global polyfill
+      if (typeof global === 'undefined') {
+        var global = globalThis;
+      }
+    </script>
     <div id="root"></div>
     <script type="module" src="/src/main.jsx"></script>
   </body>

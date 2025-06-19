@@ -16,7 +16,13 @@ export default function ChatHistory({ chatHistory }) {
         return <div style={{ color: "#888" }}>채팅 기록이 없습니다.</div>;
 
     return (
-        <div style={{ maxHeight: 340, overflowY: "auto", padding: "8px 0" }}>
+        <div style={{ 
+            maxHeight: 340, 
+            overflowY: "auto", 
+            overflowX: "hidden",
+            padding: "8px 0",
+            wordWrap: "break-word"
+        }}>
             {chatHistory.map((msg, i) => {
                 // msg.userId(혹은 senderId, 실제 백엔드 응답에 맞게)
                 const isMe = String(msg.senderId) === String(myUserId);
@@ -40,7 +46,11 @@ export default function ChatHistory({ chatHistory }) {
                                 maxWidth: 260,
                                 boxShadow: "0 1px 4px #0001",
                                 fontSize: 15,
-                                textAlign: "left"
+                                textAlign: "left",
+                                wordWrap: "break-word",
+                                wordBreak: "break-word",
+                                overflowWrap: "break-word",
+                                hyphens: "auto"
                             }}
                         >
                             {msg.message}

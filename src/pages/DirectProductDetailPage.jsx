@@ -1,19 +1,44 @@
-import React, { useState } from "react";
-import { useParams, useNavigate } from "react-router-dom";
+import React, { useState, useEffect } from "react";
+import { useParams, useNavigate, useLocation } from "react-router-dom";
 import axios from "axios";
-import { products } from "../mock/products";
+import {productApi} from "../services/api.js";
 import HeaderNav from "../components/HeaderNav";
 import { JwtManager } from "../utils/JwtManager";
 import { ENV } from "../utils/env";
 
-export default function ProductDetailPage() {
+export default function DirectProductDetailPage() {
     const { id } = useParams();
     const navigate = useNavigate();
-    const product = products.find(p => String(p.id) === String(id));
-    const jwt = JwtManager.getJwt();
+    const location = useLocation();
+    const productType = location.pathname.includes('/auction/') ? 'AUCTION' : 'DIRECT';
 
+    const [product, setProduct] = useState(null);
     const [loading, setLoading] = useState(false);
     const [errorMsg, setErrorMsg] = useState("");
+
+// URL에서 catalogId 파라미터 추출
+    const queryParams = new URLSearchParams(location.search);
+    const catalogId = queryParams.get('catalogId');
+
+    useEffect(() => {
+        if (!catalogId || !id) return;
+
+        const fetchProduct = async () => {
+            setLoading(true);
+            setErrorMsg("");
+            try {
+                const data = await productApi.getProduct(catalogId, id);
+                setProduct(data);
+            } catch (error) {
+                setErrorMsg("상품 정보를 불러오는 데 실패했습니다.");
+            } finally {
+                setLoading(false);
+            }
+        };
+
+        fetchProduct();
+    }, [catalogId, id]);
+
 
     if (!product) {
         return (
@@ -37,7 +62,7 @@ export default function ProductDetailPage() {
                 {
                     headers: {
                         "Content-Type": "application/json",
-                        "Authorization": "Bearer " + jwt,
+                        "Authorization": "Bearer " + JwtManager.getJwt(),
                     }
                 }
             );
@@ -82,10 +107,52 @@ export default function ProductDetailPage() {
                 padding: 42,
                 boxShadow: "0 4px 24px #0001"
             }}>
-                <img src={product.image} alt={product.name} style={{ width: "100%", borderRadius: 12, maxHeight: 340, objectFit: "cover" }} />
-                <div style={{ marginTop: 26, fontSize: 27, fontWeight: 700 }}>{product.name}</div>
-                <div style={{ margin: "10px 0 18px 0", color: "#888", fontSize: 16 }}>{product.category}</div>
-                <div style={{ color: "#222", fontSize: 18 }}>{product.description}</div>
+                {/* 상품 유형 표시 */}
+                <div style={{
+                    display: "inline-block",
+                    padding: "6px 12px",
+                    backgroundColor: product.productTxMethod === 'AUCTION' ? "#7f56fd" : "#38d39f",
+                    color: "white",
+                    borderRadius: "20px",
+                    fontSize: "12px",
+                    fontWeight: "bold",
+                    marginBottom: "12px"
+                }}>
+                    {product.productTxMethod === 'AUCTION' ? '경매' : '직거래'}
+                </div>
+
+                {/* 이미지 렌더링 */}
+                {product.productImageUrls.length > 0 ? (
+                    <img
+                        src={product.productImageUrls[0]}
+                        alt={product.productName}
+                        style={{ width: "100%", borderRadius: 12, maxHeight: 340, objectFit: "cover" }}
+                    />
+                ) : (
+                    <div style={{
+                        width: "100%", height: 280, background: "#ddd",
+                        borderRadius: 12, display: "flex", alignItems: "center",
+                        justifyContent: "center", fontSize: 16, color: "#666"
+                    }}>
+                        이미지 없음
+                    </div>
+                )}
+
+                {/* 상품 정보 */}
+                <div style={{ marginTop: 26, fontSize: 27, fontWeight: 700 }}>
+                    {product.productName}
+                </div>
+                <div style={{ margin: "10px 0 18px 0", color: "#888", fontSize: 16 }}>
+                    거래 방식: {product.productTxMethod === 'AUCTION' ? '경매' : '직거래'}
+                </div>
+                <div style={{ color: "#222", fontSize: 18 }}>
+                    {product.productDescription}
+                </div>
+                <div style={{ color: "#111", fontSize: 22, fontWeight: 600, marginTop: 14 }}>
+                    가격: {product.productPrice.toLocaleString()}원
+                </div>
+
+                {/* 버튼들 */}
                 <button
                     style={{
                         marginTop: 36,
@@ -118,8 +185,11 @@ export default function ProductDetailPage() {
                 >
                     목록으로
                 </button>
+
+                {/* 에러 메시지 */}
                 {errorMsg && <div style={{ color: "red", marginTop: 18 }}>{errorMsg}</div>}
             </div>
         </div>
     );
+
 }

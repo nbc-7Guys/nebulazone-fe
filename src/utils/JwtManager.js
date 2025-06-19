@@ -3,26 +3,76 @@ import { ENV } from "./env";
 
 const ACCESS_TOKEN_KEY = "accessToken";
 const REFRESH_TOKEN_KEY = "refreshToken";
+const USER_INFO_KEY = "userInfo";
+
+// 이벤트 리스너들
+const eventListeners = {
+    login: [],
+    logout: []
+};
 
 export const JwtManager = {
+    // 이벤트 리스너 등록
+    addEventListener: (event, callback) => {
+        if (eventListeners[event]) {
+            eventListeners[event].push(callback);
+        }
+    },
+
+    // 이벤트 리스너 제거
+    removeEventListener: (event, callback) => {
+        if (eventListeners[event]) {
+            const index = eventListeners[event].indexOf(callback);
+            if (index > -1) {
+                eventListeners[event].splice(index, 1);
+            }
+        }
+    },
+
+    // 이벤트 발생
+    _emitEvent: (event, data) => {
+        if (eventListeners[event]) {
+            eventListeners[event].forEach(callback => callback(data));
+        }
+    },
+
     // 토큰 저장
     setJwt: (accessToken, refreshToken) => {
         localStorage.setItem(ACCESS_TOKEN_KEY, accessToken);
         if (refreshToken) {
             localStorage.setItem(REFRESH_TOKEN_KEY, refreshToken);
         }
+        
+        // 로그인 이벤트 발생
+        JwtManager._emitEvent('login', { accessToken, refreshToken });
+    },
+
+    // 사용자 정보 저장
+    setUserInfo: (userInfo) => {
+        localStorage.setItem(USER_INFO_KEY, JSON.stringify(userInfo));
     },
 
     // Access Token 조회
     getJwt: () => localStorage.getItem(ACCESS_TOKEN_KEY),
+    getToken: () => localStorage.getItem(ACCESS_TOKEN_KEY), // 호환성
 
     // Refresh Token 조회
     getRefreshToken: () => localStorage.getItem(REFRESH_TOKEN_KEY),
+
+    // 사용자 정보 조회
+    getUserInfo: () => {
+        const userInfo = localStorage.getItem(USER_INFO_KEY);
+        return userInfo ? JSON.parse(userInfo) : null;
+    },
 
     // 토큰 삭제
     removeTokens: () => {
         localStorage.removeItem(ACCESS_TOKEN_KEY);
         localStorage.removeItem(REFRESH_TOKEN_KEY);
+        localStorage.removeItem(USER_INFO_KEY);
+        
+        // 로그아웃 이벤트 발생
+        JwtManager._emitEvent('logout');
     },
 
     // 토큰 유효성 검사

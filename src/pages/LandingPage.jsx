@@ -1,16 +1,173 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { JwtManager } from '../utils/JwtManager';
+import { auctionApi } from '../services/api';
 import './LandingPage.css';
 
 const LandingPage = () => {
     const navigate = useNavigate();
     const jwt = JwtManager.getJwt();
+    const [popularAuctions, setPopularAuctions] = useState([]);
+    const [closingAuctions, setClosingAuctions] = useState([]);
+    const [isLoading, setIsLoading] = useState(true);
+    const [error, setError] = useState(null);
+
+    useEffect(() => {
+        const fetchAuctions = async () => {
+            setIsLoading(true);
+            try {
+                // 인기 경매 가져오기
+                const popularResponse = await auctionApi.getAuctionsBySort('POPULAR');
+                console.log('인기 경매 응답 전체 데이터:', popularResponse);
+                
+                // 응답 구조 확인 및 데이터 추출
+                let popularData = [];
+                if (Array.isArray(popularResponse)) {
+                    popularData = popularResponse;
+                } else if (popularResponse && typeof popularResponse === 'object') {
+                    // 응답이 배열이 아닌 객체인 경우 (예: { data: [...] } 형태)
+                    const possibleArrayKeys = ['data', 'content', 'auctions', 'items', 'results'];
+                    for (const key of possibleArrayKeys) {
+                        if (Array.isArray(popularResponse[key])) {
+                            popularData = popularResponse[key];
+                            break;
+                        }
+                    }
+                }
+                
+                console.log('처리된 인기 경매 데이터:', popularData);
+                setPopularAuctions(popularData?.slice(0, 4) || []); // 상위 4개만 표시
+                
+                // 마감 임박 경매 가져오기
+                const closingResponse = await auctionApi.getAuctionsBySort('CLOSING');
+                console.log('마감 임박 경매 응답 전체 데이터:', closingResponse);
+                
+                // 응답 구조 확인 및 데이터 추출
+                let closingData = [];
+                if (Array.isArray(closingResponse)) {
+                    closingData = closingResponse;
+                } else if (closingResponse && typeof closingResponse === 'object') {
+                    // 응답이 배열이 아닌 객체인 경우 (예: { data: [...] } 형태)
+                    const possibleArrayKeys = ['data', 'content', 'auctions', 'items', 'results'];
+                    for (const key of possibleArrayKeys) {
+                        if (Array.isArray(closingResponse[key])) {
+                            closingData = closingResponse[key];
+                            console.log(`마감 임박 경매 데이터 찾음: closingResponse.${key}`);
+                            break;
+                        }
+                    }
+                }
+                
+                console.log('처리된 마감 임박 경매 데이터:', closingData);
+                setClosingAuctions(closingData?.slice(0, 4) || []); // 상위 4개만 표시
+                
+                setError(null);
+            } catch (err) {
+                console.error('경매 데이터를 가져오는 중 오류 발생:', err);
+                setError('경매 데이터를 불러오는 데 실패했습니다.');
+            } finally {
+                setIsLoading(false);
+            }
+        };
+
+        fetchAuctions();
+    }, []);
 
     const scrollToSection = (sectionId) => {
         document.getElementById(sectionId)?.scrollIntoView({ 
             behavior: 'smooth' 
         });
+    };
+
+    // 남은 시간 계산 함수
+    const calculateTimeLeft = (endDate) => {
+        const difference = new Date(endDate) - new Date();
+        
+        if (difference <= 0) {
+            return '마감됨';
+        }
+        
+        const days = Math.floor(difference / (1000 * 60 * 60 * 24));
+        const hours = Math.floor((difference / (1000 * 60 * 60)) % 24);
+        const minutes = Math.floor((difference / (1000 * 60)) % 60);
+        
+        if (days > 0) {
+            return `${days}일 ${hours}시간`;
+        } else if (hours > 0) {
+            return `${hours}시간 ${minutes}분`;
+        } else {
+            return `${minutes}분`;
+        }
+    };
+
+    // 가격 포맷 함수
+    const formatPrice = (price) => {
+        if (price === null || price === undefined || price === 0) {
+            return '가격 정보 없음';
+        }
+        return price.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ',') + '원';
+    };
+
+    // 경매 카드 렌더링 함수
+    const renderAuctionCard = (auction) => {
+        if (!auction) return null;
+        
+        // 콘솔에 현재 렌더링 중인 경매 객체를 출력하여 디버깅
+        console.log('렌더링 중인 경매 객체:', auction);
+        
+        // 서버 응답과 필드명 매핑
+        const mappedAuction = {
+            id: auction.auctionId,
+            title: auction.productName || '제목 없음',
+            currentPrice: auction.currentPrice || auction.startPrice || 0,
+            startPrice: auction.startPrice || 0,
+            endTime: auction.endTime,
+            imageUrl: auction.productImageUrl && auction.productImageUrl !== '이미지 없음' ? auction.productImageUrl : '',
+            bidCount: auction.bidCount || 0,
+            sellerNickname: auction.sellerNickname || '판매자 정보 없음'
+        };
+        
+        return (
+            <div 
+                key={mappedAuction.id || `auction-${Math.random()}`} 
+                className="auction-card"
+                onClick={() => mappedAuction.id ? navigate(`/products/${mappedAuction.id}`) : null}
+            >
+                <div className="auction-image">
+                    {/* 이미지 URL이 유효한 경우에만 이미지 태그를 렌더링 */}
+                    {mappedAuction.imageUrl && mappedAuction.imageUrl.trim() !== '' ? (
+                        <img 
+                            src={mappedAuction.imageUrl} 
+                            alt={mappedAuction.title} 
+                            onError={(e) => {
+                                console.log('이미지 로딩 오류, 이미지 제거:', e.target.src);
+                                // 이미지 태그 자체를 제거
+                                e.target.style.display = 'none';
+                            }}
+                        />
+                    ) : (
+                        <div className="no-image-placeholder">
+                            <span>이미지 없음</span>
+                        </div>
+                    )}
+                    <div className="auction-time-left">
+                        {mappedAuction.endTime ? calculateTimeLeft(mappedAuction.endTime) : '정보 없음'}
+                    </div>
+                </div>
+                <div className="auction-info">
+                    <h3 className="auction-title">{mappedAuction.title}</h3>
+                    <div className="auction-price">
+                        <span className="current-bid">
+                            {mappedAuction.currentPrice > 0 
+                                ? formatPrice(mappedAuction.currentPrice) 
+                                : `시작가: ${formatPrice(mappedAuction.startPrice)}`}
+                        </span>
+                        <span className="bid-count">{mappedAuction.bidCount}건의 입찰</span>
+                    </div>
+                    <div className="auction-seller">{mappedAuction.sellerNickname}</div>
+                </div>
+            </div>
+        );
     };
 
     return (
@@ -32,7 +189,7 @@ const LandingPage = () => {
                                     <>
                                         <button 
                                             className="btn-primary"
-                                            onClick={() => navigate('/products')}
+                                            onClick={() => navigate('/products/direct')}
                                         >
                                             🛍️ 상품 둘러보기
                                         </button>
@@ -77,9 +234,58 @@ const LandingPage = () => {
                         </div>
                     </div>
                 </div>
-                <div className="scroll-indicator" onClick={() => scrollToSection('features')}>
+                <div className="scroll-indicator" onClick={() => scrollToSection('auction-section')}>
                     <div className="scroll-arrow">↓</div>
-                    <span>더 알아보기</span>
+                    <span>인기 경매 보기</span>
+                </div>
+            </section>
+
+            {/* Auction Section */}
+            <section id="auction-section" className="auctions-section">
+                <div className="container">
+                    <h2 className="section-title">🔥 인기 경매</h2>
+                    {isLoading ? (
+                        <div className="loading-spinner">
+                            <div className="spinner"></div>
+                            <p>경매 데이터를 불러오는 중...</p>
+                        </div>
+                    ) : error ? (
+                        <div className="error-message">{error}</div>
+                    ) : (
+                        <div className="auctions-grid">
+                            {popularAuctions.length > 0 ? 
+                                popularAuctions.map(auction => renderAuctionCard(auction)) : 
+                                <div className="no-auctions">현재 진행 중인 인기 경매가 없습니다.</div>
+                            }
+                        </div>
+                    )}
+                    <div className="view-all-button">
+                        <button onClick={() => navigate('/auctions?sort=POPULAR')}>
+                            모든 인기 경매 보기 →
+                        </button>
+                    </div>
+
+                    <h2 className="section-title">⏰ 마감 임박 경매</h2>
+                    {isLoading ? (
+                        <div className="loading-spinner">
+                            <div className="spinner"></div>
+                            <p>경매 데이터를 불러오는 중...</p>
+                        </div>
+                    ) : error ? (
+                        <div className="error-message">{error}</div>
+                    ) : (
+                        <div className="auctions-grid">
+                            {closingAuctions.length > 0 ? 
+                                closingAuctions.map(auction => renderAuctionCard(auction)) : 
+                                <div className="no-auctions">현재 마감 임박한 경매가 없습니다.</div>
+                            }
+                        </div>
+                    )}
+                    <div className="view-all-button">
+                        <button onClick={() => navigate('/auctions?sort=CLOSING')}>
+                            모든 마감 임박 경매 보기 →
+                        </button>
+                    </div>
                 </div>
             </section>
 
@@ -136,7 +342,7 @@ const LandingPage = () => {
                                 <span>• 경쟁적 가격</span>
                                 <span>• 시간 제한</span>
                             </div>
-                            <button onClick={() => navigate('/products?type=AUCTION')}>
+                            <button onClick={() => navigate('/products/auctions')}>
                                 경매 참여하기 →
                             </button>
                         </div>
@@ -149,7 +355,7 @@ const LandingPage = () => {
                                 <span>• 고정 가격</span>
                                 <span>• 빠른 거래</span>
                             </div>
-                            <button onClick={() => navigate('/products')}>
+                            <button onClick={() => navigate('/products/direct')}>
                                 상품 둘러보기 →
                             </button>
                         </div>
@@ -234,8 +440,8 @@ const LandingPage = () => {
                         <div className="footer-links">
                             <div className="link-group">
                                 <h4>서비스</h4>
-                                <a href="/products">상품 둘러보기</a>
-                                <a href="/products?type=AUCTION">경매 참여</a>
+                                <a href="/products/direct">상품 둘러보기</a>
+                                <a href="/products/auctions">경매 참여</a>
                                 <a href="/chat/rooms">실시간 채팅</a>
                             </div>
                             <div className="link-group">

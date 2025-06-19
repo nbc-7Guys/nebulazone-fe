@@ -1,14 +1,13 @@
-import React, { useEffect, useRef, useState } from "react";
+import React, { useEffect, useState } from "react";
 import { useLocation, useNavigate, useParams } from "react-router-dom";
-import SockJS from "sockjs-client/dist/sockjs";
-import { Client } from "@stomp/stompjs";
 import HeaderNav from "../components/HeaderNav";
 import ChatHistory from "../components/ChatHistory";
 import ChatInput from "../components/ChatInput";
 import { JwtManager } from "../utils/JwtManager";
-import { ENV } from "../utils/env";
 import { productApi, chatApi } from "../services/api";
 import { ErrorHandler, ToastManager } from "../utils/errorHandler";
+import { useChat } from "../hooks/useChat";
+import { useWebSocket } from "../hooks/useWebSocket";
 
 export default function ChatRoomPage() {
     const navigate = useNavigate();
@@ -19,13 +18,20 @@ export default function ChatRoomPage() {
     const initialProduct = state?.product;
 
     const [product, setProduct] = useState(initialProduct);
-    const [chatHistory, setChatHistory] = useState([]);
     const [loading, setLoading] = useState(true);
     const [errorMsg, setErrorMsg] = useState("");
-    const [isConnected, setIsConnected] = useState(false);
     const [purchasing, setPurchasing] = useState(false);
 
-    const stompClientRef = useRef(null);
+    // WebSocket 훅 사용
+    const { isConnected } = useWebSocket();
+    const {
+        messages: chatHistory,
+        isLoadingHistory,
+        subscribeToChatRoom,
+        unsubscribeFromChatRoom,
+        sendChatMessage,
+        isChatConnected
+    } = useChat(parseInt(roomId));
 
     useEffect(() => {
         if (!jwt) {
@@ -33,94 +39,56 @@ export default function ChatRoomPage() {
             return;
         }
 
-        const fetchChatHistory = async () => {
-            try {
-                const historyData = await chatApi.getChatHistory(roomId);
-                setChatHistory(historyData);
-                setErrorMsg("");
-            } catch (error) {
-                console.error("채팅 기록 조회 실패:", error);
-                const errorInfo = ErrorHandler.handleApiError(error);
-                
-                if (errorInfo.status === 403) {
-                    setErrorMsg("채팅방에 접근할 권한이 없습니다.");
-                } else if (errorInfo.status === 404) {
-                    setErrorMsg("채팅방을 찾을 수 없습니다.");
-                } else {
-                    setErrorMsg(errorInfo.message || "채팅 기록을 불러오는데 실패했습니다.");
-                }
-            } finally {
-                setLoading(false);
-            }
-        };
-
-        fetchChatHistory();
+        // 기존의 채팅 히스토리 로딩은 useChat 훅에서 처리됨
+        setLoading(false);
     }, [roomId, jwt, navigate]);
 
+    // 채팅방 구독 관리
     useEffect(() => {
-        if (!jwt) return;
+        if (!jwt || !isConnected()) {
+            return;
+        }
 
-        const socket = new SockJS(`${ENV.API_BASE_URL}/ws`);
-        const client = new Client({
-            webSocketFactory: () => socket,
-            connectHeaders: { Authorization: "Bearer " + jwt },
-            debug: () => {},
-            onConnect: () => {
-                setIsConnected(true);
+        const initializeChatRoom = async () => {
+            try {
+                console.log(`[ChatRoomPage] Subscribing to chat room ${roomId}`);
+                await subscribeToChatRoom();
                 setErrorMsg("");
-                client.subscribe(`/topic/chat/${roomId}`, (msg) => {
-                    try {
-                        const content = JSON.parse(msg.body);
-                        setChatHistory(prev => [...prev, content]);
-                    } catch {
-                        setChatHistory(prev => [
-                            ...prev,
-                            { message: msg.body, system: true }
-                        ]);
-                    }
-                });
-            },
-            onStompError: (frame) => {
-                setIsConnected(false);
-                const errorMessage = frame.headers["message"] || "알 수 없는 WebSocket 에러";
+            } catch (error) {
+                console.error("[ChatRoomPage] Failed to subscribe to chat room:", error);
                 
-                if (errorMessage.toLowerCase().includes('token') || 
-                    errorMessage.toLowerCase().includes('unauthorized')) {
+                if (error.message && (
+                    error.message.toLowerCase().includes('token') || 
+                    error.message.toLowerCase().includes('unauthorized')
+                )) {
                     setErrorMsg("인증이 만료되어 다시 로그인해주세요.");
                     JwtManager.removeTokens();
                     navigate('/login');
                 } else {
-                    setErrorMsg(`채팅 서버 연결 실패: ${errorMessage}`);
+                    setErrorMsg(`채팅 서버 연결 실패: ${error.message || '알 수 없는 오류'}`);
                 }
-            },
-            onDisconnect: () => setIsConnected(false),
-        });
-
-        client.activate();
-        stompClientRef.current = client;
-
-        return () => {
-            try {
-                stompClientRef.current?.deactivate();
-            } catch {}
+            }
         };
-    }, [jwt, roomId, navigate]);
 
-    const handleSendMessage = (msgText) => {
-        if (!stompClientRef.current || !stompClientRef.current.connected) {
+        initializeChatRoom();
+
+        // 컴포넌트 언마운트 시 구독 해제
+        return () => {
+            console.log(`[ChatRoomPage] Unsubscribing from chat room ${roomId}`);
+            unsubscribeFromChatRoom();
+        };
+    }, [roomId, jwt, isConnected, subscribeToChatRoom, unsubscribeFromChatRoom, navigate]);
+
+    const handleSendMessage = async (msgText) => {
+        if (!isChatConnected()) {
             ToastManager.warning("서버와 연결되지 않았습니다. 잠시 후 다시 시도해주세요.");
             return;
         }
 
         try {
-            stompClientRef.current.publish({
-                destination: `/chat/send/${roomId}`,
-                body: JSON.stringify({
-                    message: msgText,
-                    type: "TEXT"
-                }),
-            });
+            await sendChatMessage(msgText);
         } catch (error) {
+            console.error("[ChatRoomPage] Failed to send message:", error);
             ToastManager.error("메시지 전송에 실패했습니다. 다시 시도해주세요.");
         }
     };
@@ -150,11 +118,12 @@ export default function ChatRoomPage() {
             ToastManager.success("구매가 완료되었습니다!");
             setProduct(prev => ({ ...prev, isSold: true }));
             
-            setChatHistory(prev => [...prev, {
-                message: "상품을 구매했습니다.",
-                system: true,
-                timestamp: new Date().toISOString()
-            }]);
+            // 구매 완료 메시지를 채팅에 추가
+            try {
+                await sendChatMessage("상품을 구매했습니다.", "TEXT");
+            } catch (chatError) {
+                console.error("Purchase notification message failed:", chatError);
+            }
         } catch (error) {
             const errorInfo = ErrorHandler.handleApiError(error);
             ToastManager.error(error.message || errorInfo.message || "구매에 실패했습니다.");
@@ -197,6 +166,8 @@ export default function ChatRoomPage() {
             </div>
         );
     }
+
+    const connectionStatus = isConnected() && isChatConnected();
 
     return (
         <div style={{ background: "#f8fafc", minHeight: "100vh" }}>
@@ -267,8 +238,8 @@ export default function ChatRoomPage() {
                         {purchasing ? "구매중..." : product.isSold ? "판매완료" : "구매하기"}
                     </button>
                 </div>
-                <div style={{ minHeight: 300 }}>
-                    {loading
+                <div style={{ minHeight: 300, overflowX: "hidden" }}>
+                    {loading || isLoadingHistory
                         ? <div style={{ textAlign: "center", padding: "40px", color: "#666" }}>
                             <div>채팅 기록을 불러오는 중...</div>
                           </div>
@@ -303,9 +274,9 @@ export default function ChatRoomPage() {
                             : <ChatHistory chatHistory={chatHistory} />}
                 </div>
                 <div style={{ marginTop: 18 }}>
-                    <ChatInput onSend={handleSendMessage} disabled={!isConnected || !!errorMsg} />
+                    <ChatInput onSend={handleSendMessage} disabled={!connectionStatus || !!errorMsg} />
                     <div style={{ 
-                        color: isConnected ? "#38d39f" : "#e53e3e", 
+                        color: connectionStatus ? "#38d39f" : "#e53e3e", 
                         fontSize: 15, 
                         marginTop: 5,
                         display: "flex",
@@ -315,11 +286,11 @@ export default function ChatRoomPage() {
                         <span style={{ 
                             width: 8, 
                             height: 8, 
-                            backgroundColor: isConnected ? "#38d39f" : "#e53e3e", 
+                            backgroundColor: connectionStatus ? "#38d39f" : "#e53e3e", 
                             borderRadius: "50%",
                             display: "inline-block"
                         }} />
-                        {isConnected ? "서버와 연결됨" : "서버 연결 안됨"}
+                        {connectionStatus ? "서버와 연결됨" : "서버 연결 안됨"}
                     </div>
                 </div>
                 <button

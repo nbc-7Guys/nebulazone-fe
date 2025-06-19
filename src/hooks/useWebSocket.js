@@ -1,81 +1,62 @@
-import { useEffect, useRef, useState } from 'react';
-import SockJS from 'sockjs-client/dist/sockjs';
-import { Client } from '@stomp/stompjs';
+import { useEffect, useRef, useCallback } from 'react';
+import webSocketManager from '../utils/WebSocketManager';
 import { JwtManager } from '../utils/JwtManager';
-import { ENV } from '../utils/env';
 
 export const useWebSocket = () => {
-    const [isConnected, setIsConnected] = useState(false);
-    const [error, setError] = useState(null);
-    const stompClientRef = useRef(null);
+    const isInitialized = useRef(false);
 
-    useEffect(() => {
-        const connect = () => {
-            const jwt = JwtManager.getJwt();
-            if (!jwt) {
-                setError('JWT 토큰이 없습니다.');
-                return;
-            }
+    const connect = useCallback(async () => {
+        if (!JwtManager.getToken()) {
+            console.log('[useWebSocket] No token found, skipping connection');
+            return false;
+        }
 
-            const socket = new SockJS(`${ENV.API_BASE_URL}/ws`);
-            const client = new Client({
-                webSocketFactory: () => socket,
-                connectHeaders: { Authorization: `Bearer ${jwt}` },
-                debug: () => {}, // 디버그 로그 비활성화
-                onConnect: () => {
-                    setIsConnected(true);
-                    setError(null);
-                },
-                onStompError: (frame) => {
-                    setIsConnected(false);
-                    setError(`WebSocket 연결 실패: ${frame.headers["message"] || "알 수 없는 에러"}`);
-                },
-                onDisconnect: () => {
-                    setIsConnected(false);
-                },
-            });
-
-            client.activate();
-            stompClientRef.current = client;
-        };
-
-        connect();
-
-        return () => {
-            if (stompClientRef.current) {
-                try {
-                    stompClientRef.current.deactivate();
-                } catch (err) {
-                    console.error('WebSocket 연결 해제 에러:', err);
-                }
-            }
-        };
+        try {
+            await webSocketManager.connect();
+            return true;
+        } catch (error) {
+            console.error('[useWebSocket] Connection failed:', error);
+            return false;
+        }
     }, []);
 
-    const subscribe = (destination, callback) => {
-        if (stompClientRef.current && isConnected) {
-            return stompClientRef.current.subscribe(destination, callback);
-        }
-        throw new Error('WebSocket이 연결되지 않았습니다.');
-    };
+    const disconnect = useCallback(() => {
+        webSocketManager.disconnect();
+        isInitialized.current = false;
+    }, []);
 
-    const publish = (destination, body) => {
-        if (stompClientRef.current && isConnected) {
-            stompClientRef.current.publish({
-                destination,
-                body: JSON.stringify(body),
-            });
-        } else {
-            throw new Error('WebSocket이 연결되지 않았습니다.');
+    const subscribe = useCallback(async (destination, callback) => {
+        try {
+            return await webSocketManager.subscribe(destination, callback);
+        } catch (error) {
+            console.error('[useWebSocket] Subscribe failed:', error);
+            throw error;
         }
-    };
+    }, []);
+
+    const unsubscribe = useCallback((destination) => {
+        webSocketManager.unsubscribe(destination);
+    }, []);
+
+    const sendMessage = useCallback(async (destination, body) => {
+        try {
+            await webSocketManager.sendMessage(destination, body);
+        } catch (error) {
+            console.error('[useWebSocket] Send message failed:', error);
+            throw error;
+        }
+    }, []);
+
+    const isConnected = useCallback(() => {
+        return webSocketManager.isConnected();
+    }, []);
 
     return {
-        isConnected,
-        error,
+        connect,
+        disconnect,
         subscribe,
-        publish,
+        unsubscribe,
+        sendMessage,
+        isConnected
     };
 };
-
-export default useWebSocket;

@@ -38,6 +38,14 @@ export default function ProductCreatePage() {
     const [images, setImages] = useState([]);
     const [imagePreviews, setImagePreviews] = useState([]);
 
+    // 경매 종료시간 옵션
+    const auctionDurationOptions = [
+        { value: 'minute_1', label: '1분 (테스트용)' },
+        { value: 'hour_12', label: '12시간' },
+        { value: 'hour_24', label: '24시간' },
+        { value: 'day_3', label: '3일' }
+    ];
+
     // 로그인 확인
     useEffect(() => {
         const jwt = JwtManager.getJwt();
@@ -164,7 +172,7 @@ export default function ProductCreatePage() {
                 description: formData.description,
                 price: parseInt(formData.price),
                 type: formData.type,
-                endTime: formData.endTime || null
+                endTime: formData.endTime ? formData.endTime : null
             };
 
             await productApi.createProduct(selectedCatalog.catalogId, productData, images);
@@ -753,28 +761,33 @@ export default function ProductCreatePage() {
                                         marginBottom: "8px",
                                         color: "#374151"
                                     }}>
-                                        경매 종료시간 (선택사항)
+                                        경매 기간 (선택사항)
                                     </label>
-                                    <input
-                                        type="datetime-local"
+                                    <select
                                         value={formData.endTime}
                                         onChange={(e) => handleFormChange('endTime', e.target.value)}
-                                        min={new Date().toISOString().slice(0, 16)}
                                         style={{
                                             width: "100%",
                                             padding: "12px 16px",
                                             border: "1px solid #d1d5db",
                                             borderRadius: "8px",
                                             fontSize: "16px",
-                                            outline: "none"
+                                            outline: "none",
+                                            backgroundColor: "#fff"
                                         }}
-                                    />
+                                    >
+                                        {auctionDurationOptions.map(option => (
+                                            <option key={option.value} value={option.value}>
+                                                {option.label}
+                                            </option>
+                                        ))}
+                                    </select>
                                     <div style={{
                                         fontSize: "12px",
                                         color: "#6b7280",
                                         marginTop: "4px"
                                     }}>
-                                        종료시간을 설정하지 않으면 무기한 경매로 진행됩니다.
+                                        기간을 설정하지 않으면 1분 경매로 진행됩니다.
                                     </div>
                                 </div>
                             )}

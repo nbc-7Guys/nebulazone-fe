@@ -9,10 +9,13 @@
     "lint": "eslint .",
     "preview": "vite preview",
     "deploy:vercel": "vercel --prod",
-    "deploy:vercel:preview": "vercel"
+    "deploy:vercel:preview": "vercel",
+    "clean": "rm -rf node_modules package-lock.json && npm install",
+    "dev:clean": "vite --force --clearCache"
   },
   "dependencies": {
     "@stomp/stompjs": "^7.1.1",
+    "@vercel/analytics": "^1.5.0",
     "axios": "^1.10.0",
     "jwt-decode": "^4.0.0",
     "react": "^19.1.0",

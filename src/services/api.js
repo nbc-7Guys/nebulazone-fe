@@ -55,10 +55,36 @@ axiosInstance.interceptors.response.use(
     }
 );
 
-// API 요청 헬퍼 함수
-const apiRequest = async (endpoint, options = {}) => {
+// 인증이 필요 없는 요청을 위한 Axios 인스턴스
+const publicAxiosInstance = axios.create({
+    baseURL: BASE_URL,
+    headers: {
+        'Content-Type': 'application/json',
+    },
+});
+
+// 인증이 필요 없는 API 요청을 위한 헬퍼 함수
+const publicApiRequest = async (endpoint, options = {}) => {
     try {
-        const response = await axiosInstance(endpoint, options);
+        const response = await publicAxiosInstance(endpoint, options);
+        return response.data;
+    } catch (error) {
+        // 구체적인 에러 정보 추가
+        const errorInfo = ErrorHandler.handleApiError(error);
+        console.error(`Public API Request Failed [${endpoint}]:`, errorInfo);
+        
+        // 원본 에러에 추가 정보 첨부
+        error.errorInfo = errorInfo;
+        throw error;
+    }
+};
+
+// API 요청 헬퍼 함수
+const apiRequest = async (endpoint, options = {}, requireAuth = true) => {
+    try {
+        // 인증이 필요한 경우 인증 인스턴스 사용, 그렇지 않으면 공개 인스턴스 사용
+        const instance = requireAuth ? axiosInstance : publicAxiosInstance;
+        const response = await instance(endpoint, options);
         return response.data;
     } catch (error) {
         // 구체적인 에러 정보 추가
@@ -72,9 +98,9 @@ const apiRequest = async (endpoint, options = {}) => {
 };
 
 // 에러를 포함한 API 요청 헬퍼 함수 (에러 알림 자동 표시)
-const apiRequestWithAlert = async (endpoint, options = {}, showAlert = true) => {
+const apiRequestWithAlert = async (endpoint, options = {}, requireAuth = true, showAlert = true) => {
     try {
-        return await apiRequest(endpoint, options);
+        return await apiRequest(endpoint, options, requireAuth);
     } catch (error) {
         if (showAlert) {
             ErrorHandler.showErrorAlert(error);
@@ -135,7 +161,7 @@ export const authApi = {
 
 // 상품 관련 API
 export const productApi = {
-    // 상품 목록 조회
+    // 상품 목록 조회 (인증 필요 없음)
     getProducts: (params = {}) => {
         const queryParams = new URLSearchParams();
         if (params.productname) queryParams.append('productname', params.productname);
@@ -147,12 +173,12 @@ export const productApi = {
         if (params.size) queryParams.append('size', params.size);
         
         const query = queryParams.toString();
-        return apiRequest(`/products${query ? `?${query}` : ''}`);
+        return apiRequest(`/products${query ? `?${query}` : ''}`, {}, false); // 인증 필요 없음
     },
 
-    // 상품 상세 조회
+    // 상품 상세 조회 (인증 필요 없음)
     getProduct: (catalogId, productId) => 
-        apiRequest(`/catalogs/${catalogId}/products/${productId}`),
+        apiRequest(`/catalogs/${catalogId}/products/${productId}`, {}, false), // 인증 필요 없음
 
     // 상품 등록
     createProduct: async (catalogId, productData, images) => {
@@ -233,13 +259,13 @@ export const productApi = {
 
 // 경매 관련 API
 export const auctionApi = {
-    // 경매 목록 조회
+    // 경매 목록 조회 (인증 필요 없음)
     getAuctions: (page = 1, size = 10) =>
-        apiRequest(`/auctions?page=${page}&size=${size}`),
+        apiRequest(`/auctions?page=${page}&size=${size}`, {}, false), // 인증 필요 없음
 
-    // 경매 상세 조회
+    // 경매 상세 조회 (인증 필요 없음)
     getAuction: (auctionId) =>
-        apiRequest(`/auctions/${auctionId}`),
+        apiRequest(`/auctions/${auctionId}`, {}, false), // 인증 필요 없음
 
     // 경매 삭제
     deleteAuction: (auctionId) =>
@@ -254,9 +280,16 @@ export const auctionApi = {
             data: endData,
         }),
 
-    // 정렬별 경매 조회
-    getAuctionsBySort: (sortType) =>
-        apiRequest(`/auctions/sorted?sortType=${sortType}`),
+    // 정렬별 경매 조회 (인증 필요 없음)
+    getAuctionsBySort: async (sortType) => {
+        try {
+            const response = await apiRequest(`/auctions/sorted?sort=${sortType}`, {}, false);
+            return response;
+        } catch (error) {
+            console.error(`${sortType} 타입 경매 조회 오류:`, error);
+            return []; // 오류 발생 시 빈 배열 반환
+        }
+    },
 };
 
 // 입찰 관련 API
@@ -293,7 +326,7 @@ export const bidApi = {
 
 // 카테고리 관련 API
 export const catalogApi = {
-    // 카테고리 목록 조회
+    // 카테고리 목록 조회 (인증 필요 없음)
     getCatalogs: (keyword = '', page = 1, size = 10, type = 'CPU') => {
         const queryParams = new URLSearchParams();
         queryParams.append('type', type); // 파라미터로 받은 type 사용
@@ -301,12 +334,12 @@ export const catalogApi = {
         queryParams.append('page', page.toString());
         queryParams.append('size', size.toString());
         
-        return apiRequest(`/catalogs?${queryParams.toString()}`);
+        return apiRequest(`/catalogs?${queryParams.toString()}`, {}, false); // 인증 필요 없음
     },
 
-    // 카테고리 상세 조회
+    // 카테고리 상세 조회 (인증 필요 없음)
     getCatalog: (catalogId) =>
-        apiRequest(`/catalogs/${catalogId}`),
+        apiRequest(`/catalogs/${catalogId}`, {}, false), // 인증 필요 없음
 };
 
 // 채팅 관련 API
@@ -425,9 +458,21 @@ export const transactionApi = {
 
 // 알림 관련 API
 export const notificationApi = {
-    // 알림 목록 조회
-    getNotifications: (page = 1, size = 10) =>
-        apiRequest(`/notifications?page=${page}&size=${size}`),
+    // 읽지 않은 알림 목록 조회
+    getUnreadNotifications: () =>
+        apiRequest('/notifications'),
+        
+    // 알림 읽음 처리
+    markAsRead: (notificationId) =>
+        apiRequest(`/notification/${notificationId}/read`, {
+            method: 'PATCH'
+        }),
+        
+    // 모든 알림 읽음 처리
+    markAllAsRead: () =>
+        apiRequest('/notification/read-all', {
+            method: 'PATCH'
+        }),
 };
 
 // 포인트 관련 API  

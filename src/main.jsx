@@ -8,7 +8,5 @@ import { validateEnv } from './utils/env'
 validateEnv();
 
 createRoot(document.getElementById('root')).render(
-  <StrictMode>
-    <App />
-  </StrictMode>,
+  <App />
 )

@@ -2,6 +2,7 @@ import React from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { JwtManager } from "../utils/JwtManager";
 import { getMyEmailFromJwt, getMyUserIdFromJwt } from "../utils/auth";
+import NotificationDisplay from "./NotificationDisplay";
 
 export default function HeaderNav() {
     const navigate = useNavigate();
@@ -59,8 +60,8 @@ export default function HeaderNav() {
                 {/* 네비게이션 메뉴 */}
                 <div style={{ display: "flex", alignItems: "center", gap: "20px" }}>
                     <NavLink
-                        onClick={() => navigate("/products")}
-                        active={isActive("/products")}
+                        onClick={() => navigate("/products/direct")}
+                        active={isActive("/products/direct")}
                         text="상품 목록"
                     />
                     
@@ -94,6 +95,8 @@ export default function HeaderNav() {
                 <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
                     {jwt ? (
                         <>
+                            {/* 알림 */}
+                            <NotificationDisplay />
                             <span style={{ fontSize: "14px", color: "#666" }}>
                                 {userEmail || `사용자 ID: ${userId}`}
                             </span>

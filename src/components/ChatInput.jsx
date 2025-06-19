@@ -40,6 +40,8 @@ export default function ChatInput({ onSend, disabled = false }) {
                     backgroundColor: disabled ? "#f7fafc" : "#fff",
                     color: disabled ? "#a0aec0" : "#2d3748",
                     transition: "all 0.2s ease",
+                    wordWrap: "break-word",
+                    overflowWrap: "break-word",
                 }}
                 onFocus={(e) => {
                     if (!disabled) {

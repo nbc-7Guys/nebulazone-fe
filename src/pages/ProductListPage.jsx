@@ -1,27 +1,34 @@
 import React, { useState, useEffect } from "react";
-import { useNavigate, useSearchParams } from "react-router-dom";
+import { useNavigate, useSearchParams, useLocation } from "react-router-dom"; // useLocation import 추가
 import HeaderNav from "../components/HeaderNav";
 import ProductCard from "../components/ProductCard";
 import Pagination from "../components/Pagination";
 import LoadingSpinner from "../components/LoadingSpinner";
 import ErrorMessage from "../components/ErrorMessage";
 import EmptyState from "../components/EmptyState";
-import { productApi } from "../services/api";
+import { productApi, auctionApi } from "../services/api"; // auctionApi import 추가
 
 export default function ProductListPage() {
     const navigate = useNavigate();
     const [searchParams, setSearchParams] = useSearchParams();
+    const location = useLocation(); // useLocation 훅 사용
+
+    // 현재 경로에 따라 거래 타입 결정
+    const getCurrentTxType = () => {
+        if (location.pathname.includes('/products/auction')) {
+            return 'AUCTION';
+        }
+        return 'DIRECT'; // 기본값 또는 /products/direct
+    };
 
     // 상태 관리
     const [products, setProducts] = useState([]);
-    const [catalogs, setCatalogs] = useState([]);
     const [loading, setLoading] = useState(true);
-    const [catalogLoading, setCatalogLoading] = useState(true);
     const [error, setError] = useState("");
 
     // 검색/필터 상태
     const [searchForm, setSearchForm] = useState({
-        type: searchParams.get('type') || 'DIRECT',
+        type: getCurrentTxType(), // URL 경로에 따라 타입 초기화
         productname: searchParams.get('search') || searchParams.get('productname') || '',
         sellernickname: searchParams.get('sellernickname') || '',
         priceFrom: searchParams.get('from') || '',
@@ -37,10 +44,14 @@ export default function ProductListPage() {
         currentPage: 1
     });
 
-    // 카탈로그 목록 로드 - 제거 (서버 파라미터와 맞지 않음)
+    // URL 경로 변경 시 searchForm.type 업데이트
     useEffect(() => {
-        setCatalogLoading(false);
-    }, []);
+        setSearchForm(prev => ({
+            ...prev,
+            type: getCurrentTxType(),
+            page: 1 // 경로 변경 시 페이지 초기화
+        }));
+    }, [location.pathname]);
 
     // 상품 목록 로드
     useEffect(() => {
@@ -52,14 +63,27 @@ export default function ProductListPage() {
                 const params = {
                     productname: searchForm.productname || undefined,
                     sellernickname: searchForm.sellernickname || undefined,
-                    type: searchForm.type,
+                    type: searchForm.type, // searchForm.type 사용
                     from: searchForm.priceFrom || undefined,
                     to: searchForm.priceTo || undefined,
                     page: searchForm.page,
                     size: searchForm.size
                 };
 
-                const response = await productApi.getProducts(params);
+                let response;
+                // 거래 타입에 따라 다른 API 호출
+                if (searchForm.type === 'AUCTION') {
+                    // 경매 API는 productname, sellernickname, priceFrom, priceTo 파라미터를 받는지 확인 필요
+                    // 현재 auctionApi.getAuctions는 page와 size만 받음.
+                    // 만약 경매 검색/필터가 필요하다면 auctionApi를 확장해야 합니다.
+                    // 임시로 productApi를 사용하거나 auctionApi.getAuctions를 직접 호출
+                    // 여기서는 productApi를 사용하되 type을 AUCTION으로 넘기는 방식으로 유지 (백엔드에서 처리한다고 가정)
+                    response = await productApi.getProducts(params); // 가정: productApi가 type 파라미터로 경매/직거래 모두 처리
+                    // 만약 auctionApi가 별도의 검색 파라미터를 가진다면 아래와 같이 변경
+                    // response = await auctionApi.getAuctions({ page: searchForm.page, size: searchForm.size, ...otherAuctionSearchParams });
+                } else {
+                    response = await productApi.getProducts(params);
+                }
 
                 setProducts(response.content || []);
                 setPagination({
@@ -69,8 +93,8 @@ export default function ProductListPage() {
                 });
 
             } catch (error) {
-                console.error('중고상품 목록 로드 실패:', error);
-                setError('중고상품 목록을 불러오는데 실패했습니다.');
+                console.error('상품 목록 로드 실패:', error);
+                setError('상품 목록을 불러오는데 실패했습니다.');
                 setProducts([]);
             } finally {
                 setLoading(false);
@@ -78,21 +102,28 @@ export default function ProductListPage() {
         };
 
         loadProducts();
-    }, [searchForm]);
+    }, [searchForm]); // searchForm이 변경될 때마다 재로드
 
-    // URL 파라미터 업데이트
+    // URL 파라미터 업데이트 (무한루프 방지를 위해 조건부로 실행)
     useEffect(() => {
         const params = new URLSearchParams();
 
-        if (searchForm.type !== 'DIRECT') params.set('type', searchForm.type);
+        // type은 URL 경로에 포함되므로 쿼리 파라미터에서는 제거
         if (searchForm.productname) params.set('search', searchForm.productname);
         if (searchForm.sellernickname) params.set('sellernickname', searchForm.sellernickname);
         if (searchForm.priceFrom) params.set('from', searchForm.priceFrom);
         if (searchForm.priceTo) params.set('to', searchForm.priceTo);
         if (searchForm.page > 1) params.set('page', searchForm.page.toString());
 
-        setSearchParams(params);
-    }, [searchForm, setSearchParams]);
+        const newSearch = params.toString();
+        const currentSearch = location.search.replace('?', '');
+
+        // 현재 URL의 쿼리 파라미터와 다를 때만 업데이트
+        if (newSearch !== currentSearch) {
+            navigate({ pathname: location.pathname, search: newSearch }, { replace: true });
+        }
+    }, [searchForm.productname, searchForm.sellernickname, searchForm.priceFrom, searchForm.priceTo, searchForm.page, navigate, location.pathname, location.search]);
+
 
     // 폼 변경 핸들러
     const handleFormChange = (field, value) => {
@@ -115,9 +146,12 @@ export default function ProductListPage() {
 
     // 상품 카드 클릭
     const handleProductClick = (product) => {
-        // catalogId는 기본값으로 1을 사용하거나, 상품에서 가져온 catalogId 사용
-        const catalogId = product.catalogId || 1;
-        navigate(`/products/${product.productId}?catalogId=${catalogId}`);
+        const catalogId = product.catalogId || 1; // catalogId가 없는 경우 기본값 설정
+        const productType = product.txMethod;
+        const productId = productType === 'AUCTION' ? product.auctionId : product.productId;
+        const baseUrl = productType === 'AUCTION' ? '/products/auction/' : '/products/direct/';
+
+        navigate(`${baseUrl}${productId}?catalogId=${catalogId}`);
     };
 
     return (
@@ -137,7 +171,7 @@ export default function ProductListPage() {
                         marginBottom: "16px",
                         color: "#1a202c"
                     }}>
-                        중고거래
+                        {searchForm.type === 'AUCTION' ? '경매 상품' : '직거래 상품'}
                     </h1>
                     <p style={{
                         fontSize: "18px",
@@ -145,6 +179,40 @@ export default function ProductListPage() {
                     }}>
                         Explore a wide range of secondhand PC parts from trusted sellers.
                     </p>
+                </div>
+
+                {/* 거래 종류 전환 버튼 */}
+                <div style={{ marginBottom: "20px", display: "flex", gap: "10px" }}>
+                    <button
+                        onClick={() => navigate('/products/direct')}
+                        style={{
+                            padding: "10px 20px",
+                            borderRadius: "8px",
+                            border: `1px solid ${searchForm.type === 'DIRECT' ? '#38d39f' : '#e2e8f0'}`,
+                            backgroundColor: searchForm.type === 'DIRECT' ? '#e6fffa' : '#fff',
+                            color: searchForm.type === 'DIRECT' ? '#38d39f' : '#4a5568',
+                            cursor: "pointer",
+                            fontWeight: "bold",
+                            fontSize: "16px",
+                        }}
+                    >
+                        직거래
+                    </button>
+                    <button
+                        onClick={() => navigate('/products/auction')}
+                        style={{
+                            padding: "10px 20px",
+                            borderRadius: "8px",
+                            border: `1px solid ${searchForm.type === 'AUCTION' ? '#38d39f' : '#e2e8f0'}`,
+                            backgroundColor: searchForm.type === 'AUCTION' ? '#e6fffa' : '#fff',
+                            color: searchForm.type === 'AUCTION' ? '#38d39f' : '#4a5568',
+                            cursor: "pointer",
+                            fontWeight: "bold",
+                            fontSize: "16px",
+                        }}
+                    >
+                        경매
+                    </button>
                 </div>
 
                 {/* 검색 및 필터 */}
@@ -157,25 +225,10 @@ export default function ProductListPage() {
                 }}>
                     <div style={{
                         display: "grid",
-                        gridTemplateColumns: "auto 1fr 1fr auto",
+                        gridTemplateColumns: "1fr 1fr auto", // 거래 유형 선택 제거
                         gap: "12px",
                         alignItems: "center"
                     }}>
-                        {/* 거래 유형 선택 */}
-                        <select
-                            value={searchForm.type}
-                            onChange={(e) => handleFormChange('type', e.target.value)}
-                            style={{
-                                padding: "8px 12px",
-                                border: "1px solid #e2e8f0",
-                                borderRadius: "6px",
-                                fontSize: "14px"
-                            }}
-                        >
-                            <option value="DIRECT">직거래</option>
-                            <option value="AUCTION">경매</option>
-                        </select>
-
                         {/* 상품명 검색 */}
                         <input
                             type="text"
@@ -294,13 +347,13 @@ export default function ProductListPage() {
                         fontSize: "14px",
                         color: "#718096"
                     }}>
-                        총 {pagination.totalElements}개의 중고상품이 등록되어 있습니다.
+                        총 {pagination.totalElements}개의 {searchForm.type === 'AUCTION' ? '경매 상품' : '직거래 상품'}이 등록되어 있습니다.
                     </div>
                 )}
 
                 {/* 상품 목록 */}
                 {loading ? (
-                    <LoadingSpinner size="large" message="중고상품을 불러오는 중..." />
+                    <LoadingSpinner size="large" message="상품을 불러오는 중..." />
                 ) : error ? (
                     <ErrorMessage
                         message={error}
@@ -310,13 +363,13 @@ export default function ProductListPage() {
                 ) : products.length === 0 ? (
                     <EmptyState
                         icon="🔍"
-                        title="등록된 중고상품이 없습니다"
+                        title="등록된 상품이 없습니다"
                         description="다른 검색 조건으로 시도해보시거나 새로운 상품을 등록해보세요."
                         actionButton={
                             <button
                                 onClick={() => {
                                     setSearchForm({
-                                        type: 'DIRECT',
+                                        type: getCurrentTxType(), // 현재 경로의 타입으로 초기화
                                         productname: '',
                                         sellernickname: '',
                                         priceFrom: '',
@@ -351,14 +404,18 @@ export default function ProductListPage() {
                         }}>
                             {products.map(product => (
                                 <ProductCard
-                                    key={product.productId}
+                                    key={`${product.txMethod}-${product.txMethod === 'AUCTION' ? product.auctionId : product.productId}`}
                                     product={{
-                                        id: product.productId,
+                                        id: product.txMethod === 'AUCTION' ? product.auctionId : product.productId,
                                         name: product.productName,
                                         price: product.productPrice,
                                         image: product.productImages?.[0] || '/placeholder-image.jpg',
                                         category: product.txMethod === 'AUCTION' ? '경매' : '직거래',
-                                        createdAt: product.createdAt
+                                        catalogId: product.catalogId,
+                                        createdAt: product.createdAt,
+                                        // 경매일 때 시작가 표시를 위한 정보 추가
+                                        priceLabel: product.txMethod === 'AUCTION' ? '시작가' : '',
+                                        isAuction: product.txMethod === 'AUCTION'
                                     }}
                                     onClick={() => handleProductClick(product)}
                                 />

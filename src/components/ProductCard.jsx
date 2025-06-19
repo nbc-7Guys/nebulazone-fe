@@ -9,6 +9,14 @@ export default function ProductCard({ product, onClick }) {
 
     const formatPrice = (price) => {
         if (!price) return "가격 정보 없음";
+
+        // 경매 상품인지 확인
+        const isAuction = product.isAuction || product.category === "경매" || product.priceLabel === "시작가";
+
+        if (isAuction) {
+            return `시작가: ${price.toLocaleString()}원`;
+        }
+
         return price.toLocaleString() + "원";
     };
 
