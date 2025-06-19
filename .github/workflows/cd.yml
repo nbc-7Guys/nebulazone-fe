@@ -1,0 +1,45 @@
+name: Deploy to Vercel
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Create .env file
+        run: echo "${{ secrets.ENV_DEFAULT }}" > .env
+
+      - name: Create .env.development file
+        run: echo "${{ secrets.ENV_DEVELOPMENT }}" > .env.development
+
+      # .env.production 파일 생성
+      - name: Create .env.production file
+        run: echo "${{ secrets.ENV_PRODUCTION }}" > .env.production
+
+      - name: Generate vercel.json with API_HOST
+        run: |
+          echo '{
+            "rewrites": [
+              {
+                "source": "/api/(.*)",
+                "destination": "https://${{ secrets.API_HOST }}/$1"
+              },
+              {
+                "source": "/(.*)",
+                "destination": "/index.html"
+              }
+            ]
+          }' > vercel.json
+
+      - name: Deploy to Vercel
+        uses: amondnet/vercel-action@v25
+        with:
+          vercel-token: ${{ secrets.VERCEL_TOKEN }}
+          vercel-org-id: ${{ secrets.VERCEL_ORG_ID }}
+          vercel-project-id: ${{ secrets.VERCEL_PROJECT_ID }}
+          working-directory: ./
