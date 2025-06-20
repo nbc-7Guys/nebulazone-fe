@@ -24,6 +24,8 @@ import { ToastProvider } from "./contexts/ToastContext";
 import ToastDemo from "./components/ToastDemo";
 import WebSocketStatus from "./components/WebSocketStatus";
 import AuctionProductDetailPage from "./pages/AuctionProductDetailPage.jsx";
+import TossPaymentComponent from "./pages/TossPaymentComponent.jsx";
+import TossPaymenrSuccesspage from "./pages/TossPaymenrSuccesspage.jsx";
 
 // WebSocket 및 알림 관리 컴포넌트
 function WebSocketProvider({ children }) {
@@ -211,6 +213,19 @@ function App() {
                                         <OAuthRedirectPage />
                                     </PrivateRoute>
                                 } />
+
+                                {/* 토스 관련 라우트 */}
+                                <Route path="/toss" element={
+                                    <PrivateRoute>
+                                        <TossPaymentComponent />
+                                    </PrivateRoute>
+                                } />
+                                <Route path="/toss/success" element={
+                                    <PrivateRoute>
+                                        <TossPaymenrSuccesspage />
+                                    </PrivateRoute>
+                                } />
+
                             </Routes>
                         </ErrorBoundary>
                         <Analytics />

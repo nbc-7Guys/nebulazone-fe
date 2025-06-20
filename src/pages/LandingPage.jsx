@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import HeaderNav from '../components/HeaderNav';
 import { JwtManager } from '../utils/JwtManager';
 import { auctionApi } from '../services/api';
 import './LandingPage.css';
@@ -172,6 +173,8 @@ const LandingPage = () => {
 
     return (
         <div className="landing-page">
+            <HeaderNav />
+            
             {/* Hero Section */}
             <section className="hero-section">
                 <div className="hero-overlay">
@@ -182,7 +185,7 @@ const LandingPage = () => {
                                 <span className="hero-subtitle">중고 거래 | 경매 | 커뮤니티</span>
                             </h1>
                             <p className="hero-description">
-                                CPU, GPU, SSD 등 컴퓨터 부품의 안전한 중고거래와 실시간 경매를 경험하세요
+                                컴퓨터 부품의 안전한 중고거래와 실시간 경매를 경험하세요
                             </p>
                             <div className="hero-buttons">
                                 {jwt ? (
@@ -191,13 +194,13 @@ const LandingPage = () => {
                                             className="btn-primary"
                                             onClick={() => navigate('/products/direct')}
                                         >
-                                            🛍️ 상품 둘러보기
+                                            상품 둘러보기
                                         </button>
                                         <button 
                                             className="btn-secondary"
                                             onClick={() => navigate('/products/create')}
                                         >
-                                            📦 상품 등록하기
+                                            상품 등록하기
                                         </button>
                                     </>
                                 ) : (
@@ -206,13 +209,13 @@ const LandingPage = () => {
                                             className="btn-primary"
                                             onClick={() => navigate('/signup')}
                                         >
-                                            🚀 시작하기
+                                            회원가입
                                         </button>
                                         <button 
                                             className="btn-secondary"
                                             onClick={() => navigate('/login')}
                                         >
-                                            🔑 로그인
+                                            로그인
                                         </button>
                                     </>
                                 )}
@@ -220,70 +223,72 @@ const LandingPage = () => {
                         </div>
                         <div className="hero-stats">
                             <div className="stat-item">
-                                <span className="stat-number">10K+</span>
+                                <span className="stat-number">2,847</span>
                                 <span className="stat-label">등록된 상품</span>
                             </div>
                             <div className="stat-item">
-                                <span className="stat-number">5K+</span>
+                                <span className="stat-number">1,203</span>
                                 <span className="stat-label">활성 사용자</span>
                             </div>
                             <div className="stat-item">
-                                <span className="stat-number">1K+</span>
+                                <span className="stat-number">956</span>
                                 <span className="stat-label">완료된 거래</span>
                             </div>
                         </div>
                     </div>
                 </div>
-                <div className="scroll-indicator" onClick={() => scrollToSection('auction-section')}>
+                <div className="scroll-indicator" onClick={() => scrollToSection('search-section')}>
                     <div className="scroll-arrow">↓</div>
-                    <span>인기 경매 보기</span>
+                    <span>상품 검색하기</span>
                 </div>
             </section>
 
             {/* 상품 검색 섹션 */}
-            <div className="search-section">
-                <h3>🔍 원하는 상품을 찾아보세요</h3>
-                <div className="search-container">
-                    <input
-                        type="text"
-                        placeholder="상품명을 입력하세요 (예: RTX 4090, i7-13700K, DDR5 32GB...)"
-                        className="search-input"
-                        onKeyPress={(e) => {
-                            if (e.key === 'Enter' && e.target.value.trim()) {
-                                navigate(`/products?search=${encodeURIComponent(e.target.value.trim())}`);
-                            }
-                        }}
-                    />
-                    <button
-                        className="search-button"
-                        onClick={(e) => {
-                            const input = e.target.previousElementSibling;
-                            if (input.value.trim()) {
-                                navigate(`/products?search=${encodeURIComponent(input.value.trim())}`);
-                            }
-                        }}
-                    >
-                        검색
-                    </button>
-                </div>
-                <div className="popular-searches">
-                    <span>인기 검색어:</span>
-                    {['RTX 4090', 'i7-13700K', 'DDR5', 'RTX 4070', 'Ryzen 7800X3D'].map((term) => (
+            <section id="search-section" className="search-section">
+                <div className="container">
+                    <h2>원하는 상품을 찾아보세요</h2>
+                    <div className="search-container">
+                        <input
+                            type="text"
+                            placeholder="상품명을 입력하세요 (예: RTX 4090, i7-13700K, DDR5 32GB...)"
+                            className="search-input"
+                            onKeyPress={(e) => {
+                                if (e.key === 'Enter' && e.target.value.trim()) {
+                                    navigate(`/products/direct?search=${encodeURIComponent(e.target.value.trim())}`);
+                                }
+                            }}
+                        />
                         <button
-                            key={term}
-                            className="search-tag"
-                            onClick={() => navigate(`/products?search=${encodeURIComponent(term)}`)}
+                            className="search-button"
+                            onClick={(e) => {
+                                const input = e.target.previousElementSibling;
+                                if (input.value.trim()) {
+                                    navigate(`/products/direct?search=${encodeURIComponent(input.value.trim())}`);
+                                }
+                            }}
                         >
-                            {term}
+                            검색
                         </button>
-                    ))}
+                    </div>
+                    <div className="popular-searches">
+                        <span>인기 검색어:</span>
+                        {['RTX 4090', 'i7-13700K', 'DDR5', 'RTX 4070', 'Ryzen 7800X3D'].map((term) => (
+                            <button
+                                key={term}
+                                className="search-tag"
+                                onClick={() => navigate(`/products/direct?search=${encodeURIComponent(term)}`)}
+                            >
+                                {term}
+                            </button>
+                        ))}
+                    </div>
                 </div>
-            </div>
+            </section>
 
             {/* Categories Section */}
             <section className="categories-section">
                 <div className="container">
-                    <h2 className="section-title">🛒 거래 방식</h2>
+                    <h2 className="section-title">거래 방식</h2>
                     <div className="categories-grid-two">
                         <div className="category-card auction">
                             <div className="category-icon">⚡</div>
@@ -294,7 +299,7 @@ const LandingPage = () => {
                                 <span>• 경쟁적 가격</span>
                                 <span>• 시간 제한</span>
                             </div>
-                            <button onClick={() => navigate('/products/auctions')}>
+                            <button onClick={() => navigate('/products/auction')}>
                                 경매 참여하기 →
                             </button>
                         </div>
@@ -315,10 +320,40 @@ const LandingPage = () => {
                 </div>
             </section>
 
+            {/* 커뮤니티 섹션 */}
+            <section className="community-section">
+                <div className="container">
+                    <h2 className="section-title">커뮤니티</h2>
+                    <div className="community-grid">
+                        <div className="community-card">
+                            <h3>자유게시판</h3>
+                            <p>자유롭게 소통하고 정보를 공유하세요</p>
+                            <button onClick={() => navigate('/posts?type=FREE')}>
+                                자유게시판 →
+                            </button>
+                        </div>
+                        <div className="community-card">
+                            <h3>질문/답변</h3>
+                            <p>궁금한 것을 물어보고 답변을 받아보세요</p>
+                            <button onClick={() => navigate('/posts?type=QNA')}>
+                                질문게시판 →
+                            </button>
+                        </div>
+                        <div className="community-card">
+                            <h3>거래후기</h3>
+                            <p>거래 경험을 공유하고 후기를 확인하세요</p>
+                            <button onClick={() => navigate('/posts?type=REVIEW')}>
+                                후기게시판 →
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
             {/* Auction Section */}
             <section id="auction-section" className="auctions-section">
                 <div className="container">
-                    <h2 className="section-title">🔥 인기 경매</h2>
+                    <h2 className="section-title">인기 경매</h2>
                     {isLoading ? (
                         <div className="loading-spinner">
                             <div className="spinner"></div>
@@ -335,31 +370,33 @@ const LandingPage = () => {
                         </div>
                     )}
                     <div className="view-all-button">
-                        <button onClick={() => navigate('/auctions?sort=POPULAR')}>
-                            모든 인기 경매 보기 →
+                        <button onClick={() => navigate('/products/auction')}>
+                            모든 경매 보기 →
                         </button>
                     </div>
+                </div>
+            </section>
 
-                    <h2 className="section-title">⏰ 마감 임박 경매</h2>
-                    {isLoading ? (
-                        <div className="loading-spinner">
-                            <div className="spinner"></div>
-                            <p>경매 데이터를 불러오는 중...</p>
+            {/* 안전거래 섹션 */}
+            <section className="safety-section">
+                <div className="container">
+                    <h2 className="section-title">안전한 거래</h2>
+                    <div className="safety-grid">
+                        <div className="safety-card">
+                            <div className="safety-icon">🛡️</div>
+                            <h3>거래 보호</h3>
+                            <p>포인트 시스템으로 안전한 거래를 보장합니다</p>
                         </div>
-                    ) : error ? (
-                        <div className="error-message">{error}</div>
-                    ) : (
-                        <div className="auctions-grid">
-                            {closingAuctions.length > 0 ? 
-                                closingAuctions.map(auction => renderAuctionCard(auction)) : 
-                                <div className="no-auctions">현재 마감 임박한 경매가 없습니다.</div>
-                            }
+                        <div className="safety-card">
+                            <div className="safety-icon">💬</div>
+                            <h3>실시간 채팅</h3>
+                            <p>판매자와 구매자 간 실시간 소통</p>
                         </div>
-                    )}
-                    <div className="view-all-button">
-                        <button onClick={() => navigate('/auctions?sort=CLOSING')}>
-                            모든 마감 임박 경매 보기 →
-                        </button>
+                        <div className="safety-card">
+                            <div className="safety-icon">⭐</div>
+                            <h3>신뢰도 시스템</h3>
+                            <p>거래 기록과 평가를 통한 신뢰할 수 있는 거래</p>
+                        </div>
                     </div>
                 </div>
             </section>

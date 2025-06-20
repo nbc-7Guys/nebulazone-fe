@@ -18,8 +18,11 @@ const axiosInstance = axios.create({
 axiosInstance.interceptors.request.use(
     (config) => {
         const jwt = JwtManager.getJwt();
+
         if (jwt) {
             config.headers.Authorization = `Bearer ${jwt}`;
+        } else {
+            console.warn('[API] No JWT token found for authenticated request');
         }
         return config;
     },

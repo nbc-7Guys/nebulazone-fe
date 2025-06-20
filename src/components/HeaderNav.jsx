@@ -1,9 +1,5 @@
 import React, { useState } from "react";
-import { useNavigate, useLocation } from "react-router-dom";
-import { JwtManager } from "../utils/JwtManager";
-import { getMyEmailFromJwt, getMyUserIdFromJwt } from "../utils/auth";
 import NotificationDisplay from "./NotificationDisplay";
-import React from "react";
 import {useLocation, useNavigate} from "react-router-dom";
 import {JwtManager} from "../utils/JwtManager";
 import {getMyEmailFromJwt, getMyUserIdFromJwt} from "../utils/auth";
@@ -91,6 +87,12 @@ export default function HeaderNav() {
                             text="상품 등록"
                         />
                     )}
+
+                    <NavLink
+                        onClick={() => navigate("/toss")}
+                        active={location.pathname.startsWith("/toss")}
+                        text="포인트 충전"
+                    />
                 </div>
 
                 {/* 사용자 메뉴 */}
