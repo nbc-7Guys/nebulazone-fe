@@ -21,6 +21,7 @@ export default function ChatRoomPage() {
     const [loading, setLoading] = useState(true);
     const [errorMsg, setErrorMsg] = useState("");
     const [purchasing, setPurchasing] = useState(false);
+    const [connectionStatus, setConnectionStatus] = useState(false);
 
     // WebSocket 훅 사용
     const { isConnected } = useWebSocket();
@@ -39,45 +40,75 @@ export default function ChatRoomPage() {
             return;
         }
 
-        // 기존의 채팅 히스토리 로딩은 useChat 훅에서 처리됨
-        setLoading(false);
-    }, [roomId, jwt, navigate]);
-
-    // 채팅방 구독 관리
-    useEffect(() => {
-        if (!jwt || !isConnected()) {
-            return;
+        // 새로고침으로 product 정보가 없는 경우 API로 가져오기
+        if (!product && roomId) {
+            const fetchProductInfo = async () => {
+                try {
+                    setLoading(true);
+                    // roomId로 상품 정보를 가져오는 API 호출
+                    const productData = await chatApi.getChatRoomInfo(roomId);
+                    setProduct(productData.product);
+                } catch (error) {
+                    console.error("Failed to fetch product info:", error);
+                    setErrorMsg("상품 정보를 불러올 수 없습니다.");
+                } finally {
+                    setLoading(false);
+                }
+            };
+            fetchProductInfo();
+        } else {
+            setLoading(false);
         }
+    }, [roomId, jwt, navigate, product]);
+
+    // 채팅방 구독 관리 - 웹소켓 연결 상태 변화에 반응
+    useEffect(() => {
+        if (!jwt) return;
 
         const initializeChatRoom = async () => {
-            try {
-                console.log(`[ChatRoomPage] Subscribing to chat room ${roomId}`);
-                await subscribeToChatRoom();
-                setErrorMsg("");
-            } catch (error) {
-                console.error("[ChatRoomPage] Failed to subscribe to chat room:", error);
-                
-                if (error.message && (
-                    error.message.toLowerCase().includes('token') || 
-                    error.message.toLowerCase().includes('unauthorized')
-                )) {
-                    setErrorMsg("인증이 만료되어 다시 로그인해주세요.");
-                    JwtManager.removeTokens();
-                    navigate('/login');
-                } else {
-                    setErrorMsg(`채팅 서버 연결 실패: ${error.message || '알 수 없는 오류'}`);
+            // WebSocket이 연결되고 채팅이 연결되지 않은 경우에만 구독
+            if (isConnected() && !isChatConnected()) {
+                try {
+                    console.log(`[ChatRoomPage] Subscribing to chat room ${roomId}`);
+                    await subscribeToChatRoom();
+                    setErrorMsg("");
+                } catch (error) {
+                    console.error("[ChatRoomPage] Failed to subscribe to chat room:", error);
+                    
+                    if (error.message && (
+                        error.message.toLowerCase().includes('token') || 
+                        error.message.toLowerCase().includes('unauthorized')
+                    )) {
+                        setErrorMsg("인증이 만료되어 다시 로그인해주세요.");
+                        JwtManager.removeTokens();
+                        navigate('/login');
+                    } else {
+                        setErrorMsg(`채팅 서버 연결 실패: ${error.message || '알 수 없는 오류'}`);
+                    }
                 }
             }
         };
 
+        // 웹소켓 연결 상태가 변경될 때마다 재시도
+        const interval = setInterval(() => {
+            if (isConnected() && !isChatConnected()) {
+                console.log(`[ChatRoomPage] Retrying chat room subscription for room ${roomId}`);
+                initializeChatRoom();
+            }
+        }, 5000); // 5초마다 확인 (간격 늘림)
+
+        // 즉시 한 번 실행
         initializeChatRoom();
 
-        // 컴포넌트 언마운트 시 구독 해제
         return () => {
-            console.log(`[ChatRoomPage] Unsubscribing from chat room ${roomId}`);
-            unsubscribeFromChatRoom();
+            clearInterval(interval);
+            if (isChatConnected()) {
+                console.log(`[ChatRoomPage] Unsubscribing from chat room ${roomId}`);
+                unsubscribeFromChatRoom();
+            }
         };
-    }, [roomId, jwt, isConnected, subscribeToChatRoom, unsubscribeFromChatRoom, navigate]);
+    }, [roomId, jwt, subscribeToChatRoom, unsubscribeFromChatRoom, navigate]);
+
 
     const handleSendMessage = async (msgText) => {
         if (!isChatConnected()) {
@@ -167,7 +198,36 @@ export default function ChatRoomPage() {
         );
     }
 
-    const connectionStatus = isConnected() && isChatConnected();
+    // 연결 상태 실시간 업데이트
+    useEffect(() => {
+        const updateConnectionStatus = () => {
+            const wsConnected = isConnected();
+            const chatConnected = isChatConnected();
+            const newStatus = wsConnected && chatConnected;
+            
+            console.log('[ChatRoomPage] Connection Status Update:', {
+                webSocketConnected: wsConnected,
+                chatConnected: chatConnected,
+                newStatus: newStatus,
+                currentStatus: connectionStatus
+            });
+            
+            if (newStatus !== connectionStatus) {
+                setConnectionStatus(newStatus);
+                console.log(`[ChatRoomPage] Connection status changed: ${connectionStatus} -> ${newStatus}`);
+            }
+        };
+
+        // 즉시 한 번 실행
+        updateConnectionStatus();
+
+        // 주기적으로 상태 확인 (1초마다)
+        const statusInterval = setInterval(updateConnectionStatus, 1000);
+
+        return () => {
+            clearInterval(statusInterval);
+        };
+    }, [isConnected(), isChatConnected(), connectionStatus]);
 
     return (
         <div style={{ background: "#f8fafc", minHeight: "100vh" }}>

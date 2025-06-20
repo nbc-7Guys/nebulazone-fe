@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { JwtManager } from "../utils/JwtManager";
 import { getMyEmailFromJwt, getMyUserIdFromJwt } from "../utils/auth";
@@ -10,13 +10,20 @@ export default function HeaderNav() {
     const jwt = JwtManager.getJwt();
     const userEmail = getMyEmailFromJwt();
     const userId = getMyUserIdFromJwt();
+    const [isMenuOpen, setIsMenuOpen] = useState(false);
 
     const handleLogout = () => {
         JwtManager.removeTokens();
         navigate("/login");
+        setIsMenuOpen(false);
     };
 
     const isActive = (path) => location.pathname === path;
+
+    const handleMenuItemClick = (path) => {
+        navigate(path);
+        setIsMenuOpen(false);
+    };
 
     return (
         <nav style={{
@@ -61,38 +68,27 @@ export default function HeaderNav() {
                 <div style={{ display: "flex", alignItems: "center", gap: "20px" }}>
                     <NavLink
                         onClick={() => navigate("/products/direct")}
-                        active={isActive("/products/direct")}
+                        active={isActive("/products/direct") || isActive("/products/auction")}
                         text="상품 목록"
                     />
                     
+                    <NavLink
+                        onClick={() => navigate("/posts")}
+                        active={location.pathname.startsWith("/posts")}
+                        text="커뮤니티"
+                    />
+                    
                     {jwt && (
-                        <>
-                            <NavLink
-                                onClick={() => navigate("/chat/rooms")}
-                                active={isActive("/chat/rooms")}
-                                text="채팅"
-                            />
-                            <NavLink
-                                onClick={() => navigate("/products/create")}
-                                active={isActive("/products/create")}
-                                text="상품 등록"
-                            />
-                            <NavLink
-                                onClick={() => navigate("/transactions")}
-                                active={isActive("/transactions")}
-                                text="거래내역"
-                            />
-                            <NavLink
-                                onClick={() => navigate("/mypage")}
-                                active={isActive("/mypage")}
-                                text="마이페이지"
-                            />
-                        </>
+                        <NavLink
+                            onClick={() => navigate("/products/create")}
+                            active={isActive("/products/create")}
+                            text="상품 등록"
+                        />
                     )}
                 </div>
 
                 {/* 사용자 메뉴 */}
-                <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
+                <div style={{ display: "flex", alignItems: "center", gap: "12px", position: "relative" }}>
                     {jwt ? (
                         <>
                             {/* 알림 */}
@@ -100,27 +96,145 @@ export default function HeaderNav() {
                             <span style={{ fontSize: "14px", color: "#666" }}>
                                 {userEmail || `사용자 ID: ${userId}`}
                             </span>
+                            
+                            {/* 햄버거 메뉴 버튼 */}
                             <button
-                                onClick={handleLogout}
+                                onClick={() => setIsMenuOpen(!isMenuOpen)}
                                 style={{
-                                    padding: "8px 16px",
-                                    backgroundColor: "#f7fafc",
-                                    color: "#4a5568",
-                                    border: "1px solid #e2e8f0",
-                                    borderRadius: "8px",
-                                    fontSize: "14px",
+                                    padding: "12px",
+                                    backgroundColor: isMenuOpen ? "#38d39f" : "#fff",
+                                    color: isMenuOpen ? "#fff" : "#4a5568",
+                                    border: `2px solid ${isMenuOpen ? "#38d39f" : "#e2e8f0"}`,
+                                    borderRadius: "16px",
                                     cursor: "pointer",
-                                    transition: "all 0.2s ease"
+                                    transition: "all 0.3s ease",
+                                    display: "flex",
+                                    flexDirection: "column",
+                                    alignItems: "center",
+                                    justifyContent: "center",
+                                    width: "48px",
+                                    height: "48px",
+                                    boxShadow: isMenuOpen ? "0 8px 25px rgba(56, 211, 159, 0.3)" : "0 2px 8px rgba(0,0,0,0.1)",
+                                    transform: isMenuOpen ? "scale(1.05)" : "scale(1)",
+                                    position: "relative"
                                 }}
                                 onMouseEnter={(e) => {
-                                    e.target.style.backgroundColor = "#edf2f7";
+                                    if (!isMenuOpen) {
+                                        e.target.style.backgroundColor = "#f0fff4";
+                                        e.target.style.borderColor = "#38d39f";
+                                        e.target.style.transform = "scale(1.05)";
+                                    }
                                 }}
                                 onMouseLeave={(e) => {
-                                    e.target.style.backgroundColor = "#f7fafc";
+                                    if (!isMenuOpen) {
+                                        e.target.style.backgroundColor = "#fff";
+                                        e.target.style.borderColor = "#e2e8f0";
+                                        e.target.style.transform = "scale(1)";
+                                    }
                                 }}
                             >
-                                로그아웃
+                                <div style={{
+                                    position: "absolute",
+                                    width: "20px",
+                                    height: "2px",
+                                    backgroundColor: isMenuOpen ? "#fff" : "#4a5568",
+                                    transition: "all 0.3s ease",
+                                    transform: isMenuOpen ? "rotate(45deg)" : "translateY(-4px)"
+                                }}></div>
+                                <div style={{
+                                    position: "absolute",
+                                    width: "20px",
+                                    height: "2px",
+                                    backgroundColor: isMenuOpen ? "#fff" : "#4a5568",
+                                    transition: "all 0.3s ease",
+                                    opacity: isMenuOpen ? "0" : "1"
+                                }}></div>
+                                <div style={{
+                                    position: "absolute",
+                                    width: "20px",
+                                    height: "2px",
+                                    backgroundColor: isMenuOpen ? "#fff" : "#4a5568",
+                                    transition: "all 0.3s ease",
+                                    transform: isMenuOpen ? "rotate(-45deg)" : "translateY(4px)"
+                                }}></div>
                             </button>
+
+                            {/* 드롭다운 메뉴 */}
+                            {isMenuOpen && (
+                                <div style={{
+                                    position: "absolute",
+                                    top: "calc(100% + 16px)",
+                                    right: "0",
+                                    backgroundColor: "#fff",
+                                    border: "1px solid #e2e8f0",
+                                    borderRadius: "20px",
+                                    boxShadow: "0 20px 60px rgba(0,0,0,0.15)",
+                                    zIndex: 1000,
+                                    minWidth: "220px",
+                                    padding: "16px 0",
+                                    animation: "slideDown 0.3s ease-out",
+                                    overflow: "hidden"
+                                }}>
+                                    <div style={{
+                                        padding: "0 20px 16px",
+                                        borderBottom: "1px solid #f1f5f9",
+                                        marginBottom: "8px"
+                                    }}>
+                                        <div style={{
+                                            fontSize: "16px",
+                                            fontWeight: "600",
+                                            color: "#1a202c",
+                                            marginBottom: "4px"
+                                        }}>
+                                            메뉴
+                                        </div>
+                                        <div style={{
+                                            fontSize: "12px",
+                                            color: "#64748b"
+                                        }}>
+                                            {userEmail || `User ${userId}`}
+                                        </div>
+                                    </div>
+                                    
+                                    <MenuItem
+                                        onClick={() => handleMenuItemClick("/mypage")}
+                                        text="마이페이지"
+                                        icon="👤"
+                                        active={isActive("/mypage")}
+                                    />
+                                    <MenuItem
+                                        onClick={() => handleMenuItemClick("/posts")}
+                                        text="커뮤니티"
+                                        icon="📝"
+                                        active={location.pathname.startsWith("/posts")}
+                                    />
+                                    <MenuItem
+                                        onClick={() => handleMenuItemClick("/transactions")}
+                                        text="거래내역"
+                                        icon="📋"
+                                        active={isActive("/transactions")}
+                                    />
+                                    <MenuItem
+                                        onClick={() => handleMenuItemClick("/chat/rooms")}
+                                        text="채팅"
+                                        icon="💬"
+                                        active={isActive("/chat/rooms")}
+                                    />
+                                    
+                                    <div style={{
+                                        height: "1px",
+                                        backgroundColor: "#f1f5f9",
+                                        margin: "12px 20px"
+                                    }}></div>
+                                    
+                                    <MenuItem
+                                        onClick={handleLogout}
+                                        text="로그아웃"
+                                        icon="🚪"
+                                        isLogout={true}
+                                    />
+                                </div>
+                            )}
                         </>
                     ) : (
                         <>
@@ -170,6 +284,35 @@ export default function HeaderNav() {
                     )}
                 </div>
             </div>
+
+            {/* 메뉴가 열려있을 때 배경 클릭으로 닫기 (블러 효과 제거) */}
+            {isMenuOpen && (
+                <div
+                    onClick={() => setIsMenuOpen(false)}
+                    style={{
+                        position: "fixed",
+                        top: 0,
+                        left: 0,
+                        right: 0,
+                        bottom: 0,
+                        zIndex: 999
+                    }}
+                />
+            )}
+
+            {/* CSS 애니메이션을 위한 스타일 */}
+            <style>{`
+                @keyframes slideDown {
+                    from {
+                        opacity: 0;
+                        transform: translateY(-10px);
+                    }
+                    to {
+                        opacity: 1;
+                        transform: translateY(0);
+                    }
+                }
+            `}</style>
         </nav>
     );
 }
@@ -203,6 +346,50 @@ function NavLink({ onClick, active, text }) {
                 }
             }}
         >
+            {text}
+        </button>
+    );
+}
+
+function MenuItem({ onClick, text, icon, active, isLogout }) {
+    return (
+        <button
+            onClick={onClick}
+            style={{
+                width: "100%",
+                padding: "14px 20px",
+                backgroundColor: active ? "#f0fff4" : "transparent",
+                color: isLogout ? "#ef4444" : (active ? "#38d39f" : "#4a5568"),
+                border: "none",
+                fontSize: "15px",
+                fontWeight: active ? "600" : "500",
+                cursor: "pointer",
+                transition: "all 0.2s ease",
+                textAlign: "left",
+                display: "flex",
+                alignItems: "center",
+                gap: "12px"
+            }}
+            onMouseEnter={(e) => {
+                if (!active) {
+                    e.target.style.backgroundColor = isLogout ? "#fef2f2" : "#f8fafc";
+                    e.target.style.paddingLeft = "24px";
+                }
+            }}
+            onMouseLeave={(e) => {
+                if (!active) {
+                    e.target.style.backgroundColor = "transparent";
+                    e.target.style.paddingLeft = "20px";
+                }
+            }}
+        >
+            <span style={{ 
+                fontSize: "16px",
+                width: "20px",
+                textAlign: "center"
+            }}>
+                {icon}
+            </span>
             {text}
         </button>
     );

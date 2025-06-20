@@ -10,10 +10,18 @@ import ChatRoomListPage from "./pages/ChatRoomListPage";
 import SignUpPage from "./pages/SignUpPage";
 import LoginPage from "./pages/LoginPage";
 import TransactionHistoryPage from "./pages/TransactionHistoryPage";
+import PostListPage from "./pages/PostListPage";
+import PostDetailPage from "./pages/PostDetailPage";
+import PostCreatePage from "./pages/PostCreatePage";
+import PostEditPage from "./pages/PostEditPage";
+import PrivateRoute from "./components/PrivateRoute";
+import ErrorBoundary from "./components/ErrorBoundary";
 import { Analytics } from "@vercel/analytics/react";
 import { JwtManager } from "./utils/JwtManager";
 import { useWebSocket } from "./hooks/useWebSocket";
 import { NotificationProvider, useNotificationContext } from "./contexts/NotificationContext";
+import { ToastProvider } from "./contexts/ToastContext";
+import ToastDemo from "./components/ToastDemo";
 import WebSocketStatus from "./components/WebSocketStatus";
 import AuctionProductDetailPage from "./pages/AuctionProductDetailPage.jsx";
 
@@ -117,21 +125,8 @@ function WebSocketProvider({ children }) {
         };
     }, [disconnect, unsubscribeFromNotifications, isConnected]);
 
-    // 페이지 새로고침 시 정리
-    useEffect(() => {
-        const handleBeforeUnload = () => {
-            if (isConnected()) {
-                unsubscribeFromNotifications();
-                disconnect();
-            }
-        };
-
-        window.addEventListener('beforeunload', handleBeforeUnload);
-        
-        return () => {
-            window.removeEventListener('beforeunload', handleBeforeUnload);
-        };
-    }, [disconnect, unsubscribeFromNotifications, isConnected]);
+    // 페이지 새로고침 시에는 웹소켓을 끊지 않음 (자동 재연결 활용)
+    // beforeunload에서 disconnect하면 새로고침 후 재연결이 어려워짐
 
     return children;
 }
@@ -141,27 +136,84 @@ function App() {
     
     return (
         <BrowserRouter>
-            <NotificationProvider>
-                <WebSocketProvider>
-                    <Routes>
-                        <Route path="/" element={<LandingPage />} />
-                        <Route path="/products/direct" element={<ProductListPage />} />
-                        <Route path="/products/auction" element={<ProductListPage />} />
-                        <Route path="/products/create" element={<ProductCreatePage />} />
-                        <Route path="/products/direct/:id" element={<DirectProductDetailPage />} />
-                        <Route path="/products/auction/:id" element={<AuctionProductDetailPage />} />
-                        <Route path="/mypage" element={<MyPage />} />
-                        <Route path="/chat/:roomId" element={<ChatRoomPage />} />
-                        <Route path="/chat/rooms" element={<ChatRoomListPage />} />
-                        <Route path="/transactions" element={<TransactionHistoryPage />} />
-                        <Route path="/signup" element={<SignUpPage />} />
-                        <Route path="/login" element={<LoginPage />} />
-                    </Routes>
-                    <Analytics />
-                    {/* 개발 환경에서만 WebSocket 상태 표시 */}
-                    {isDevelopment && <WebSocketStatus />}
-                </WebSocketProvider>
-            </NotificationProvider>
+            <ToastProvider position="top-right">
+                <NotificationProvider>
+                    <WebSocketProvider>
+                        <ErrorBoundary>
+                            <Routes>
+                                <Route path="/" element={<LandingPage />} />
+                                
+                                {/* 상품 관련 라우트 */}
+                                <Route path="/products/direct" element={<ProductListPage />} />
+                                <Route path="/products/auction" element={<ProductListPage />} />
+                                <Route path="/products/create" element={
+                                    <PrivateRoute>
+                                        <ProductCreatePage />
+                                    </PrivateRoute>
+                                } />
+                                <Route path="/products/direct/:id" element={<DirectProductDetailPage />} />
+                                <Route path="/products/auction/:id" element={<AuctionProductDetailPage />} />
+                                
+                                {/* 게시글 관련 라우트 */}
+                                <Route path="/posts" element={<PostListPage />} />
+                                <Route path="/posts/create" element={
+                                    <PrivateRoute>
+                                        <PostCreatePage />
+                                    </PrivateRoute>
+                                } />
+                                <Route path="/posts/:postId" element={<PostDetailPage />} />
+                                <Route path="/posts/:postId/edit" element={
+                                    <PrivateRoute>
+                                        <PostEditPage />
+                                    </PrivateRoute>
+                                } />
+                                
+                                {/* 사용자 관련 라우트 */}
+                                <Route path="/mypage" element={
+                                    <PrivateRoute>
+                                        <MyPage />
+                                    </PrivateRoute>
+                                } />
+                                <Route path="/signup" element={
+                                    <PrivateRoute requireAuth={false}>
+                                        <SignUpPage />
+                                    </PrivateRoute>
+                                } />
+                                <Route path="/login" element={
+                                    <PrivateRoute requireAuth={false}>
+                                        <LoginPage />
+                                    </PrivateRoute>
+                                } />
+                                
+                                {/* 채팅 관련 라우트 */}
+                                <Route path="/chat/:roomId" element={
+                                    <PrivateRoute>
+                                        <ChatRoomPage />
+                                    </PrivateRoute>
+                                } />
+                                <Route path="/chat/rooms" element={
+                                    <PrivateRoute>
+                                        <ChatRoomListPage />
+                                    </PrivateRoute>
+                                } />
+                                
+                                {/* 거래 관련 라우트 */}
+                                <Route path="/transactions" element={
+                                    <PrivateRoute>
+                                        <TransactionHistoryPage />
+                                    </PrivateRoute>
+                                } />
+                            </Routes>
+                        </ErrorBoundary>
+                        <Analytics />
+                        {/* 개발 환경에서만 WebSocket 상태 표시 */}
+                        {isDevelopment && <WebSocketStatus />}
+                        {/* 개발 환경에서만 Toast 데모 표시 */}
+                        {isDevelopment && <ToastDemo />}
+                        {/*<WebSocketStatus />*/}
+                    </WebSocketProvider>
+                </NotificationProvider>
+            </ToastProvider>
         </BrowserRouter>
     );
 }

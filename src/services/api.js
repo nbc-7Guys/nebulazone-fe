@@ -18,12 +18,20 @@ const axiosInstance = axios.create({
 axiosInstance.interceptors.request.use(
     (config) => {
         const jwt = JwtManager.getJwt();
+        console.log('[API] Request interceptor - JWT token:', jwt ? 'Found' : 'Not found');
+        console.log('[API] Request URL:', config.url);
+        console.log('[API] Request method:', config.method);
+        
         if (jwt) {
             config.headers.Authorization = `Bearer ${jwt}`;
+            console.log('[API] Authorization header added');
+        } else {
+            console.warn('[API] No JWT token found for authenticated request');
         }
         return config;
     },
     (error) => {
+        console.error('[API] Request interceptor error:', error);
         return Promise.reject(error);
     }
 );
@@ -34,9 +42,17 @@ axiosInstance.interceptors.response.use(
         return response;
     },
     (error) => {
+        console.log('[API] Response interceptor - Error:', {
+            status: error.response?.status,
+            message: error.response?.data?.message,
+            url: error.config?.url,
+            method: error.config?.method,
+            hasAuthHeader: !!error.config?.headers?.Authorization
+        });
+
         // JWT 에러인지 확인
         if (ErrorHandler.isJwtError(error)) {
-            console.warn('JWT Error detected:', error.response?.data?.message);
+            console.warn('[API] JWT Error detected:', error.response?.data?.message);
             JwtManager.removeTokens();
             window.location.href = '/login';
             return Promise.reject(error);
@@ -44,6 +60,12 @@ axiosInstance.interceptors.response.use(
 
         // 401 에러 처리 (일반적인 인증 실패)
         if (error.response && error.response.status === 401) {
+            console.warn('[API] 401 Unauthorized error detected');
+            // 게시글 관련 요청의 경우 자동 리다이렉트 하지 않고 에러를 던져서 재시도 로직이 동작하도록 함
+            if (error.config?.url?.includes('/posts')) {
+                console.log('[API] Posts API 401 error - not redirecting, letting retry logic handle it');
+                return Promise.reject(error);
+            }
             JwtManager.removeTokens();
             window.location.href = '/login';
             return Promise.reject(error);
@@ -488,6 +510,153 @@ export const pointApi = {
                 method: 'POST',
                 data: pointData,
             });
+        } catch (error) {
+            const errorInfo = ErrorHandler.handleApiError(error);
+            throw new Error(errorInfo.message);
+        }
+    },
+};
+
+// 게시글 관련 API
+export const postApi = {
+    // 게시글 작성 (인증 필요)
+    createPost: async (postData, images) => {
+        const formData = new FormData();
+        
+        // JSON 파트에 Content-Type 명시적으로 설정
+        const postBlob = new Blob([JSON.stringify(postData)], {
+            type: 'application/json'
+        });
+        formData.append('post', postBlob);
+        
+        // 이미지 파일들 추가
+        if (images && images.length > 0) {
+            images.forEach(image => {
+                formData.append('images', image);
+            });
+        }
+
+        try {
+            const response = await axiosInstance.post('/posts', formData, {
+                headers: {
+                    'Content-Type': 'multipart/form-data',
+                },
+            });
+            return response.data;
+        } catch (error) {
+            const errorInfo = ErrorHandler.handleApiError(error);
+            throw new Error(errorInfo.message);
+        }
+    },
+
+    // 게시글 수정 (인증 필요)
+    updatePost: async (postId, postData, images) => {
+        const formData = new FormData();
+        
+        // JSON 파트에 Content-Type 명시적으로 설정
+        const postBlob = new Blob([JSON.stringify(postData)], {
+            type: 'application/json'
+        });
+        formData.append('post', postBlob);
+        
+        // 이미지 파일들 추가
+        if (images && images.length > 0) {
+            images.forEach(image => {
+                formData.append('images', image);
+            });
+        }
+
+        try {
+            const response = await axiosInstance.put(`/posts/${postId}`, formData, {
+                headers: {
+                    'Content-Type': 'multipart/form-data',
+                },
+            });
+            return response.data;
+        } catch (error) {
+            const errorInfo = ErrorHandler.handleApiError(error);
+            throw new Error(errorInfo.message);
+        }
+    },
+
+    // 게시글 삭제 (인증 필요)
+    deletePost: async (postId) => {
+        try {
+            return await apiRequest(`/posts/${postId}`, {
+                method: 'DELETE',
+            }, true); // 인증 필요
+        } catch (error) {
+            const errorInfo = ErrorHandler.handleApiError(error);
+            throw new Error(errorInfo.message);
+        }
+    },
+
+    // 게시글 목록 검색 (인증 여부를 매개변수로 받음)
+    searchPosts: (params = {}, requireAuth = true) => {
+        const queryParams = new URLSearchParams();
+        
+        // 검색 키워드
+        if (params.keyword) queryParams.append('keyword', params.keyword);
+        
+        // 게시글 타입 (필수)
+        if (params.type) queryParams.append('type', params.type);
+        
+        // 페이지네이션
+        if (params.page) queryParams.append('page', params.page);
+        if (params.size) queryParams.append('size', params.size);
+        
+        const query = queryParams.toString();
+        return apiRequest(`/posts${query ? `?${query}` : ''}`, {}, requireAuth);
+    },
+
+    // 게시글 상세 조회 (인증 여부를 매개변수로 받음)
+    getPost: (postId, requireAuth = true) =>
+        apiRequest(`/posts/${postId}`, {}, requireAuth),
+};
+
+// 댓글 관련 API
+export const commentApi = {
+    // 댓글 작성
+    createComment: async (postId, commentData) => {
+        try {
+            return await apiRequest(`/posts/${postId}/comments`, {
+                method: 'POST',
+                data: commentData,
+            }, true); // 인증 필요
+        } catch (error) {
+            const errorInfo = ErrorHandler.handleApiError(error);
+            throw new Error(errorInfo.message);
+        }
+    },
+
+    // 댓글 목록 조회
+    getComments: (postId, page = 1, size = 20) => {
+        const queryParams = new URLSearchParams();
+        queryParams.append('page', page.toString());
+        queryParams.append('size', size.toString());
+        
+        return apiRequest(`/posts/${postId}/comments?${queryParams.toString()}`, {}, true);
+    },
+
+    // 댓글 수정
+    updateComment: async (postId, commentId, commentData) => {
+        try {
+            return await apiRequest(`/posts/${postId}/comments/${commentId}`, {
+                method: 'PUT',
+                data: commentData,
+            }, true); // 인증 필요
+        } catch (error) {
+            const errorInfo = ErrorHandler.handleApiError(error);
+            throw new Error(errorInfo.message);
+        }
+    },
+
+    // 댓글 삭제
+    deleteComment: async (postId, commentId) => {
+        try {
+            return await apiRequest(`/posts/${postId}/comments/${commentId}`, {
+                method: 'DELETE',
+            }, true); // 인증 필요
         } catch (error) {
             const errorInfo = ErrorHandler.handleApiError(error);
             throw new Error(errorInfo.message);

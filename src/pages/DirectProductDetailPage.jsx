@@ -54,11 +54,12 @@ export default function DirectProductDetailPage() {
 
     // 채팅방 생성 후 이동
     const handleStartChat = async () => {
+        console.log(product)
         setLoading(true);
         setErrorMsg("");
         try {
             const response = await axios.post(`${ENV.API_BASE_URL}/chat/rooms`, 
-                { productId: product.id },
+                { productId: product.productId },
                 {
                     headers: {
                         "Content-Type": "application/json",

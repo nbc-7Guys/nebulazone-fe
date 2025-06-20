@@ -87,16 +87,19 @@ const WebSocketStatus = () => {
     return (
         <div style={{
             position: 'fixed',
-            bottom: '20px',
-            left: '20px', // 오른쪽에서 왼쪽으로 변경
+            top: '75%',
+            left: '20px',
             background: 'white',
             border: '1px solid #e2e8f0',
             borderRadius: '8px',
             padding: isCollapsed ? '8px' : '16px',
             boxShadow: '0 4px 12px rgba(0, 0, 0, 0.15)',
             minWidth: isCollapsed ? 'auto' : '280px',
-            zIndex: 1000,
-            transition: 'all 0.3s ease'
+            maxWidth: '300px',
+            maxHeight: isCollapsed ? 'auto' : '70vh',
+            zIndex: 999,
+            transition: 'all 0.3s ease',
+            overflow: 'hidden'
         }}>
             {isCollapsed ? (
                 // 최소화된 상태
@@ -248,7 +251,7 @@ const WebSocketStatus = () => {
                         <div style={{ marginTop: '12px', fontSize: '11px' }}>
                             <strong>최근 알림:</strong>
                             <div style={{
-                                maxHeight: '100px',
+                                maxHeight: '80px',
                                 overflowY: 'auto',
                                 marginTop: '4px',
                                 padding: '4px',

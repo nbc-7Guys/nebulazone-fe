@@ -1,3 +1,19 @@
+/* 기본 스타일 초기화 */
+* {
+    box-sizing: border-box;
+}
+
+html, body {
+    margin: 0;
+    padding: 0;
+    overflow-x: hidden; /* 가로 스크롤 방지 */
+}
+
+/* Fixed position 요소들이 페이지 스크롤에 영향을 주지 않도록 */
+body {
+    position: relative;
+}
+
 .box {
     max-width: 450px;
     margin: 0 auto;

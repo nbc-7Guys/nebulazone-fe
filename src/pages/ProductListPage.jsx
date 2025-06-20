@@ -146,7 +146,7 @@ export default function ProductListPage() {
 
     // 상품 카드 클릭
     const handleProductClick = (product) => {
-        const catalogId = product.catalogId || 1; // catalogId가 없는 경우 기본값 설정
+        const catalogId = product.catalogId;
         const productType = product.txMethod;
         const productId = productType === 'AUCTION' ? product.auctionId : product.productId;
         const baseUrl = productType === 'AUCTION' ? '/products/auction/' : '/products/direct/';

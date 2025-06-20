@@ -8,6 +8,7 @@ export const useChat = (roomId) => {
     const [isTyping, setIsTyping] = useState(false);
     const [onlineUsers, setOnlineUsers] = useState([]);
     const [isLoadingHistory, setIsLoadingHistory] = useState(false);
+    const [isSubscribed, setIsSubscribed] = useState(false);
     const currentSubscription = useRef(null);
     const { subscribe, unsubscribe, sendMessage, isConnected } = useWebSocket();
 
@@ -54,9 +55,18 @@ export const useChat = (roomId) => {
             unsubscribeFromChatRoom();
         }
 
+        // 웹소켓 연결 상태 확인
+        if (!isConnected()) {
+            console.log('[useChat] WebSocket not connected, cannot subscribe');
+            throw new Error('WebSocket not connected');
+        }
+
         const destination = `/topic/chat/${roomId}`;
 
         try {
+            console.log(`[useChat] Attempting to subscribe to ${destination}`);
+            console.log(`[useChat] WebSocket connected: ${isConnected()}`);
+            
             const subscription = await subscribe(destination, (message) => {
                 const chatMessage = JSON.parse(message.body);
                 console.log('[useChat] Received message:', chatMessage);
@@ -72,17 +82,27 @@ export const useChat = (roomId) => {
             });
 
             currentSubscription.current = { destination, subscription };
-            console.log(`[useChat] Subscribed to chat room ${roomId}`);
+            setIsSubscribed(true);
+            console.log(`[useChat] Successfully subscribed to chat room ${roomId}`, subscription);
+            console.log(`[useChat] Current subscription stored:`, currentSubscription.current);
         } catch (error) {
             console.error('[useChat] Failed to subscribe to chat room:', error);
+            console.error('[useChat] Error details:', {
+                message: error.message,
+                stack: error.stack,
+                roomId: roomId,
+                destination: destination
+            });
+            throw error;
         }
-    }, [roomId, subscribe, unsubscribe]);
+    }, [roomId, subscribe, unsubscribe, isConnected]);
 
     // 채팅방 구독 해제
     const unsubscribeFromChatRoom = useCallback(() => {
         if (currentSubscription.current) {
             unsubscribe(currentSubscription.current.destination);
             currentSubscription.current = null;
+            setIsSubscribed(false);
             console.log(`[useChat] Unsubscribed from chat room ${roomId}`);
         }
     }, [roomId, unsubscribe]);
@@ -185,8 +205,19 @@ export const useChat = (roomId) => {
 
     // 연결 상태 확인
     const isChatConnected = useCallback(() => {
-        return isConnected() && currentSubscription.current !== null;
-    }, [isConnected]);
+        const wsConnected = isConnected();
+        const hasSubscription = isSubscribed;
+        const result = wsConnected && hasSubscription;
+        
+        console.log('[useChat] Chat connection status:', {
+            webSocketConnected: wsConnected,
+            isSubscribed: hasSubscription,
+            subscriptionRef: !!currentSubscription.current,
+            finalResult: result
+        });
+        
+        return result;
+    }, [isConnected, isSubscribed]);
 
     return {
         messages,

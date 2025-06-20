@@ -2,13 +2,45 @@ import React, { createContext, useContext, useState, useCallback, useEffect } fr
 import { useWebSocket } from '../hooks/useWebSocket';
 import { JwtManager } from '../utils/JwtManager';
 import { notificationApi } from '../services/api';
+import { useToastContext } from './ToastContext';
 
 const NotificationContext = createContext();
+
+// 알림 타입에 따른 Toast 타입 결정
+const getToastTypeFromNotification = (notification) => {
+    const type = notification.type?.toLowerCase();
+    const title = notification.title?.toLowerCase();
+    const content = notification.content?.toLowerCase();
+    
+    // 알림 타입이나 제목, 내용에 따라 Toast 타입 결정
+    if (type === 'error' || title?.includes('오류') || title?.includes('실패') || title?.includes('error')) {
+        return 'error';
+    }
+    if (type === 'success' || title?.includes('성공') || title?.includes('완료') || title?.includes('success')) {
+        return 'success';
+    }
+    if (type === 'warning' || title?.includes('경고') || title?.includes('주의') || title?.includes('warning')) {
+        return 'warning';
+    }
+    
+    // 채팅 관련 알림은 info로 처리
+    if (title?.includes('채팅') || title?.includes('메시지') || content?.includes('채팅') || content?.includes('메시지')) {
+        return 'info';
+    }
+    
+    // 거래 관련 알림 처리
+    if (title?.includes('거래') || title?.includes('구매') || title?.includes('판매') || title?.includes('결제')) {
+        return 'success';
+    }
+    
+    return 'info'; // 기본값
+};
 
 export const NotificationProvider = ({ children }) => {
     const [notifications, setNotifications] = useState([]);
     const [unreadCount, setUnreadCount] = useState(0);
     const { subscribe, unsubscribe } = useWebSocket();
+    const { toast } = useToastContext();
 
     // 초기 알림 데이터 로드
     useEffect(() => {
@@ -80,6 +112,15 @@ export const NotificationProvider = ({ children }) => {
                         new Notification(notification.title, {
                             body: notification.content,
                             icon: '/favicon.ico'
+                        });
+                    }
+                    
+                    // Toast 알림 표시
+                    if (toast) {
+                        const toastType = getToastTypeFromNotification(notification);
+                        toast[toastType](notification.content, {
+                            title: notification.title,
+                            duration: 5000
                         });
                     }
                 }

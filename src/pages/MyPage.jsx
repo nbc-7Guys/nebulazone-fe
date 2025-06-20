@@ -14,15 +14,19 @@ export default function MyPage() {
     const [error, setError] = useState("");
     
     // 수정 모드 상태
-    const [editMode, setEditMode] = useState(null); // 'nickname', 'password', null
+    const [editMode, setEditMode] = useState(null); // 'nickname', 'password', 'phone', 'address', null
     const [updating, setUpdating] = useState(false);
     
     // 폼 데이터
     const [formData, setFormData] = useState({
         nickname: "",
+        phone: "",
         oldPassword: "",
         newPassword: "",
-        confirmPassword: ""
+        confirmPassword: "",
+        roadAddress: "",
+        detailAddress: "",
+        addressNickname: ""
     });
     
     // 회원탈퇴 관련
@@ -47,7 +51,20 @@ export default function MyPage() {
             setError("");
             const response = await userApi.getMyProfile();
             setUser(response);
-            setFormData(prev => ({ ...prev, nickname: response.nickname || "" }));
+            
+            // 기본 주소 찾기
+            const defaultAddress = response.addresses?.find(addr => 
+                addr.addressNickname === "기본배송지" || response.addresses?.length === 1
+            ) || {};
+            
+            setFormData(prev => ({ 
+                ...prev, 
+                nickname: response.nickname || "",
+                phone: response.phone || "",
+                roadAddress: defaultAddress.roadAddress || "",
+                detailAddress: defaultAddress.detailAddress || "",
+                addressNickname: defaultAddress.addressNickname || "기본배송지"
+            }));
         } catch (error) {
             console.error('프로필 로드 실패:', error);
             const errorInfo = ErrorHandler.handleApiError(error);
@@ -89,14 +106,13 @@ export default function MyPage() {
             };
 
             await userApi.updateProfile(updateData);
-            await loadUserProfile(); // 프로필 새로고침
+            await loadUserProfile();
             setEditMode(null);
             ToastManager.success('닉네임이 성공적으로 변경되었습니다.');
         } catch (error) {
             console.error('닉네임 수정 실패:', error);
             const errorInfo = ErrorHandler.handleApiError(error);
             
-            // 구체적인 에러 메시지 표시
             if (errorInfo.status === 409) {
                 ToastManager.error('이미 사용 중인 닉네임입니다.');
             } else if (errorInfo.status === 400) {
@@ -104,6 +120,41 @@ export default function MyPage() {
             } else {
                 ToastManager.error(errorInfo.message || '닉네임 수정에 실패했습니다.');
             }
+        } finally {
+            setUpdating(false);
+        }
+    };
+
+    // 전화번호 수정
+    const handleUpdatePhone = async () => {
+        if (!formData.phone.trim()) {
+            ToastManager.error('전화번호를 입력해주세요.');
+            return;
+        }
+
+        // 전화번호 형식 검증 (간단한 검증)
+        const phoneRegex = /^01[0-9]-?[0-9]{4}-?[0-9]{4}$/;
+        if (!phoneRegex.test(formData.phone.replace(/-/g, ''))) {
+            ToastManager.error('올바른 전화번호 형식을 입력해주세요. (예: 010-1234-5678)');
+            return;
+        }
+
+        setUpdating(true);
+        setError("");
+
+        try {
+            const updateData = {
+                phone: formData.phone
+            };
+
+            await userApi.updateProfile(updateData);
+            await loadUserProfile();
+            setEditMode(null);
+            ToastManager.success('전화번호가 성공적으로 변경되었습니다.');
+        } catch (error) {
+            console.error('전화번호 수정 실패:', error);
+            const errorInfo = ErrorHandler.handleApiError(error);
+            ToastManager.error(errorInfo.message || '전화번호 수정에 실패했습니다.');
         } finally {
             setUpdating(false);
         }
@@ -151,7 +202,6 @@ export default function MyPage() {
             console.error('비밀번호 수정 실패:', error);
             const errorInfo = ErrorHandler.handleApiError(error);
             
-            // 구체적인 에러 메시지 표시
             if (errorInfo.status === 401 || errorInfo.status === 400) {
                 if (errorInfo.message && errorInfo.message.includes('비밀번호')) {
                     ToastManager.error('기존 비밀번호가 올바르지 않습니다.');
@@ -161,6 +211,38 @@ export default function MyPage() {
             } else {
                 ToastManager.error(errorInfo.message || '비밀번호 수정에 실패했습니다.');
             }
+        } finally {
+            setUpdating(false);
+        }
+    };
+
+    // 주소 수정
+    const handleUpdateAddress = async () => {
+        if (!formData.roadAddress.trim()) {
+            ToastManager.error('도로명 주소를 입력해주세요.');
+            return;
+        }
+
+        setUpdating(true);
+        setError("");
+
+        try {
+            const updateData = {
+                addresses: [{
+                    roadAddress: formData.roadAddress,
+                    detailAddress: formData.detailAddress,
+                    addressNickname: formData.addressNickname || "기본배송지"
+                }]
+            };
+
+            await userApi.updateProfile(updateData);
+            await loadUserProfile();
+            setEditMode(null);
+            ToastManager.success('주소가 성공적으로 변경되었습니다.');
+        } catch (error) {
+            console.error('주소 수정 실패:', error);
+            const errorInfo = ErrorHandler.handleApiError(error);
+            ToastManager.error(errorInfo.message || '주소 수정에 실패했습니다.');
         } finally {
             setUpdating(false);
         }
@@ -184,7 +266,6 @@ export default function MyPage() {
             await userApi.withdraw(withdrawPassword);
             JwtManager.removeTokens();
             ToastManager.success('회원탈퇴가 완료되었습니다.');
-            // 2초 후 메인 페이지로 이동
             setTimeout(() => {
                 navigate('/');
             }, 2000);
@@ -192,7 +273,6 @@ export default function MyPage() {
             console.error('회원탈퇴 실패:', error);
             const errorInfo = ErrorHandler.handleApiError(error);
             
-            // 구체적인 에러 메시지 표시
             if (errorInfo.status === 401 || errorInfo.status === 400) {
                 ToastManager.error('비밀번호가 올바르지 않습니다.');
             } else {
@@ -206,15 +286,51 @@ export default function MyPage() {
     // 수정 취소
     const handleCancelEdit = () => {
         setEditMode(null);
+        const defaultAddress = user?.addresses?.find(addr => 
+            addr.addressNickname === "기본배송지" || user?.addresses?.length === 1
+        ) || {};
+        
         setFormData(prev => ({
             ...prev,
             nickname: user?.nickname || "",
+            phone: user?.phone || "",
+            roadAddress: defaultAddress.roadAddress || "",
+            detailAddress: defaultAddress.detailAddress || "",
+            addressNickname: defaultAddress.addressNickname || "기본배송지",
             oldPassword: "",
             newPassword: "",
             confirmPassword: ""
         }));
         setError("");
     };
+
+    // 날짜 포맷팅
+    const formatDate = (dateString) => {
+        if (!dateString) return '-';
+        const date = new Date(dateString);
+        return date.toLocaleDateString('ko-KR', {
+            year: 'numeric',
+            month: 'long',
+            day: 'numeric',
+            hour: '2-digit',
+            minute: '2-digit'
+        });
+    };
+
+    // OAuth 타입 한글 변환
+    const getOAuthTypeLabel = (oAuthType) => {
+        switch (oAuthType) {
+            case 'DOMAIN': return '일반 회원';
+            case 'GOOGLE': return '구글 로그인';
+            case 'KAKAO': return '카카오 로그인';
+            case 'NAVER': return '네이버 로그인';
+            default: return oAuthType || '일반 회원';
+        }
+    };
+
+    const defaultAddress = user?.addresses?.find(addr => 
+        addr.addressNickname === "기본배송지" || user?.addresses?.length === 1
+    ) || {};
 
     if (loading) {
         return (
@@ -262,7 +378,7 @@ export default function MyPage() {
                     />
                 )}
 
-                {/* 사용자 정보 카드 */}
+                {/* 기본 정보 카드 */}
                 <div style={{
                     backgroundColor: "#fff",
                     padding: "32px",
@@ -278,6 +394,28 @@ export default function MyPage() {
                     }}>
                         기본 정보
                     </h2>
+
+                    {/* 사용자 ID */}
+                    <div style={{ marginBottom: "24px" }}>
+                        <label style={{
+                            display: "block",
+                            fontSize: "14px",
+                            fontWeight: "500",
+                            marginBottom: "8px",
+                            color: "#374151"
+                        }}>
+                            사용자 ID
+                        </label>
+                        <div style={{
+                            padding: "12px 16px",
+                            backgroundColor: "#f7fafc",
+                            border: "1px solid #e2e8f0",
+                            borderRadius: "8px",
+                            color: "#4a5568"
+                        }}>
+                            {user?.userId}
+                        </div>
+                    </div>
 
                     {/* 이메일 */}
                     <div style={{ marginBottom: "24px" }}>
@@ -390,6 +528,166 @@ export default function MyPage() {
                         )}
                     </div>
 
+                    {/* 전화번호 */}
+                    <div style={{ marginBottom: "24px" }}>
+                        <label style={{
+                            display: "block",
+                            fontSize: "14px",
+                            fontWeight: "500",
+                            marginBottom: "8px",
+                            color: "#374151"
+                        }}>
+                            전화번호
+                        </label>
+                        
+                        {editMode === 'phone' ? (
+                            <div style={{ display: "flex", gap: "8px", alignItems: "center" }}>
+                                <input
+                                    type="tel"
+                                    value={formData.phone}
+                                    onChange={(e) => handleFormChange('phone', e.target.value)}
+                                    placeholder="010-1234-5678"
+                                    style={{
+                                        flex: 1,
+                                        padding: "12px 16px",
+                                        border: "1px solid #d1d5db",
+                                        borderRadius: "8px",
+                                        fontSize: "16px",
+                                        outline: "none"
+                                    }}
+                                />
+                                <button
+                                    onClick={handleUpdatePhone}
+                                    disabled={updating}
+                                    style={{
+                                        padding: "12px 16px",
+                                        backgroundColor: "#38d39f",
+                                        color: "#fff",
+                                        border: "none",
+                                        borderRadius: "8px",
+                                        fontSize: "14px",
+                                        cursor: updating ? "not-allowed" : "pointer",
+                                        opacity: updating ? 0.7 : 1
+                                    }}
+                                >
+                                    {updating ? "저장 중..." : "저장"}
+                                </button>
+                                <button
+                                    onClick={handleCancelEdit}
+                                    style={{
+                                        padding: "12px 16px",
+                                        backgroundColor: "#f7fafc",
+                                        color: "#4a5568",
+                                        border: "1px solid #e2e8f0",
+                                        borderRadius: "8px",
+                                        fontSize: "14px",
+                                        cursor: "pointer"
+                                    }}
+                                >
+                                    취소
+                                </button>
+                            </div>
+                        ) : (
+                            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                                <div style={{
+                                    padding: "12px 16px",
+                                    backgroundColor: "#f7fafc",
+                                    border: "1px solid #e2e8f0",
+                                    borderRadius: "8px",
+                                    color: "#4a5568",
+                                    flex: 1
+                                }}>
+                                    {user?.phone || '등록된 전화번호가 없습니다'}
+                                </div>
+                                <button
+                                    onClick={() => setEditMode('phone')}
+                                    style={{
+                                        marginLeft: "12px",
+                                        padding: "12px 16px",
+                                        backgroundColor: "#e2e8f0",
+                                        color: "#4a5568",
+                                        border: "none",
+                                        borderRadius: "8px",
+                                        fontSize: "14px",
+                                        cursor: "pointer"
+                                    }}
+                                >
+                                    수정
+                                </button>
+                            </div>
+                        )}
+                    </div>
+
+                    {/* 포인트 */}
+                    <div style={{ marginBottom: "24px" }}>
+                        <label style={{
+                            display: "block",
+                            fontSize: "14px",
+                            fontWeight: "500",
+                            marginBottom: "8px",
+                            color: "#374151"
+                        }}>
+                            보유 포인트
+                        </label>
+                        <div style={{
+                            padding: "12px 16px",
+                            backgroundColor: "#f0fff4",
+                            border: "1px solid #38d39f",
+                            borderRadius: "8px",
+                            color: "#2d7d52",
+                            fontWeight: "600"
+                        }}>
+                            {user?.point?.toLocaleString() || 0} 포인트
+                        </div>
+                    </div>
+
+                    {/* 가입 정보 */}
+                    <div style={{ 
+                        borderTop: "1px solid #e2e8f0", 
+                        paddingTop: "24px",
+                        marginTop: "24px"
+                    }}>
+                        <h3 style={{
+                            fontSize: "16px",
+                            fontWeight: "600",
+                            marginBottom: "16px",
+                            color: "#1a202c"
+                        }}>
+                            가입 정보
+                        </h3>
+                        
+                        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "16px" }}>
+                            <div>
+                                <label style={{
+                                    display: "block",
+                                    fontSize: "12px",
+                                    fontWeight: "500",
+                                    marginBottom: "4px",
+                                    color: "#6b7280"
+                                }}>
+                                    가입 유형
+                                </label>
+                                <div style={{ fontSize: "14px", color: "#374151" }}>
+                                    {getOAuthTypeLabel(user?.oAuthType)}
+                                </div>
+                            </div>
+                            <div>
+                                <label style={{
+                                    display: "block",
+                                    fontSize: "12px",
+                                    fontWeight: "500",
+                                    marginBottom: "4px",
+                                    color: "#6b7280"
+                                }}>
+                                    가입일
+                                </label>
+                                <div style={{ fontSize: "14px", color: "#374151" }}>
+                                    {formatDate(user?.createdAt)}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
                     {/* 빠른 메뉴 */}
                     <div style={{ 
                         borderTop: "1px solid #e2e8f0", 
@@ -427,14 +725,7 @@ export default function MyPage() {
                                     e.target.style.backgroundColor = "#007bff";
                                 }}
                             >
-                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                                    <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
-                                    <polyline points="14,2 14,8 20,8"/>
-                                    <line x1="16" y1="13" x2="8" y2="13"/>
-                                    <line x1="16" y1="17" x2="8" y2="17"/>
-                                    <polyline points="10,9 9,9 8,9"/>
-                                </svg>
-                                거래내역 보기
+                                📋 거래내역 보기
                             </button>
                             <button
                                 onClick={() => navigate('/chat/rooms')}
@@ -458,277 +749,10 @@ export default function MyPage() {
                                     e.target.style.backgroundColor = "#28a745";
                                 }}
                             >
-                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                                    <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
-                                </svg>
-                                채팅방 보기
+                                💬 채팅방 보기
                             </button>
                         </div>
                     </div>
-                </div>
-
-                {/* 비밀번호 변경 카드 */}
-                <div style={{
-                    backgroundColor: "#fff",
-                    padding: "32px",
-                    borderRadius: "12px",
-                    boxShadow: "0 1px 3px rgba(0,0,0,0.1)",
-                    marginBottom: "24px"
-                }}>
-                    <h2 style={{
-                        fontSize: "20px",
-                        fontWeight: "600",
-                        marginBottom: "24px",
-                        color: "#1a202c"
-                    }}>
-                        비밀번호 변경
-                    </h2>
-
-                    {editMode === 'password' ? (
-                        <div>
-                            {/* 기존 비밀번호 */}
-                            <div style={{ marginBottom: "16px" }}>
-                                <label style={{
-                                    display: "block",
-                                    fontSize: "14px",
-                                    fontWeight: "500",
-                                    marginBottom: "8px",
-                                    color: "#374151"
-                                }}>
-                                    기존 비밀번호 *
-                                </label>
-                                <input
-                                    type="password"
-                                    value={formData.oldPassword}
-                                    onChange={(e) => handleFormChange('oldPassword', e.target.value)}
-                                    style={{
-                                        width: "100%",
-                                        padding: "12px 16px",
-                                        border: "1px solid #d1d5db",
-                                        borderRadius: "8px",
-                                        fontSize: "16px",
-                                        outline: "none"
-                                    }}
-                                />
-                            </div>
-
-                            {/* 새 비밀번호 */}
-                            <div style={{ marginBottom: "16px" }}>
-                                <label style={{
-                                    display: "block",
-                                    fontSize: "14px",
-                                    fontWeight: "500",
-                                    marginBottom: "8px",
-                                    color: "#374151"
-                                }}>
-                                    새 비밀번호 *
-                                </label>
-                                <input
-                                    type="password"
-                                    value={formData.newPassword}
-                                    onChange={(e) => handleFormChange('newPassword', e.target.value)}
-                                    style={{
-                                        width: "100%",
-                                        padding: "12px 16px",
-                                        border: "1px solid #d1d5db",
-                                        borderRadius: "8px",
-                                        fontSize: "16px",
-                                        outline: "none"
-                                    }}
-                                />
-                                <div style={{
-                                    fontSize: "12px",
-                                    color: "#6b7280",
-                                    marginTop: "4px"
-                                }}>
-                                    대소문자, 숫자, 특수문자를 각각 최소 1자 이상 포함하며 8글자 이상
-                                </div>
-                            </div>
-
-                            {/* 비밀번호 확인 */}
-                            <div style={{ marginBottom: "24px" }}>
-                                <label style={{
-                                    display: "block",
-                                    fontSize: "14px",
-                                    fontWeight: "500",
-                                    marginBottom: "8px",
-                                    color: "#374151"
-                                }}>
-                                    새 비밀번호 확인 *
-                                </label>
-                                <input
-                                    type="password"
-                                    value={formData.confirmPassword}
-                                    onChange={(e) => handleFormChange('confirmPassword', e.target.value)}
-                                    style={{
-                                        width: "100%",
-                                        padding: "12px 16px",
-                                        border: "1px solid #d1d5db",
-                                        borderRadius: "8px",
-                                        fontSize: "16px",
-                                        outline: "none"
-                                    }}
-                                />
-                            </div>
-
-                            {/* 버튼 그룹 */}
-                            <div style={{ display: "flex", gap: "12px" }}>
-                                <button
-                                    onClick={handleUpdatePassword}
-                                    disabled={updating}
-                                    style={{
-                                        padding: "12px 24px",
-                                        backgroundColor: updating ? "#9ca3af" : "#38d39f",
-                                        color: "#fff",
-                                        border: "none",
-                                        borderRadius: "8px",
-                                        fontSize: "16px",
-                                        cursor: updating ? "not-allowed" : "pointer"
-                                    }}
-                                >
-                                    {updating ? "변경 중..." : "비밀번호 변경"}
-                                </button>
-                                
-                                <button
-                                    onClick={handleCancelEdit}
-                                    style={{
-                                        padding: "12px 24px",
-                                        backgroundColor: "#f7fafc",
-                                        color: "#4a5568",
-                                        border: "1px solid #e2e8f0",
-                                        borderRadius: "8px",
-                                        fontSize: "16px",
-                                        cursor: "pointer"
-                                    }}
-                                >
-                                    취소
-                                </button>
-                            </div>
-                        </div>
-                    ) : (
-                        <button
-                            onClick={() => setEditMode('password')}
-                            style={{
-                                padding: "12px 24px",
-                                backgroundColor: "#e2e8f0",
-                                color: "#4a5568",
-                                border: "none",
-                                borderRadius: "8px",
-                                fontSize: "16px",
-                                cursor: "pointer"
-                            }}
-                        >
-                            비밀번호 변경하기
-                        </button>
-                    )}
-                </div>
-
-                {/* 회원탈퇴 카드 */}
-                <div style={{
-                    backgroundColor: "#fff",
-                    padding: "32px",
-                    borderRadius: "12px",
-                    boxShadow: "0 1px 3px rgba(0,0,0,0.1)",
-                    border: "1px solid #fed7d7"
-                }}>
-                    <h2 style={{
-                        fontSize: "20px",
-                        fontWeight: "600",
-                        marginBottom: "16px",
-                        color: "#e53e3e"
-                    }}>
-                        회원탈퇴
-                    </h2>
-                    
-                    <p style={{
-                        fontSize: "14px",
-                        color: "#4a5568",
-                        marginBottom: "24px"
-                    }}>
-                        회원탈퇴시 모든 데이터가 삭제되며 복구할 수 없습니다.
-                    </p>
-
-                    {showWithdraw ? (
-                        <div>
-                            <div style={{ marginBottom: "16px" }}>
-                                <label style={{
-                                    display: "block",
-                                    fontSize: "14px",
-                                    fontWeight: "500",
-                                    marginBottom: "8px",
-                                    color: "#374151"
-                                }}>
-                                    비밀번호 확인 *
-                                </label>
-                                <input
-                                    type="password"
-                                    value={withdrawPassword}
-                                    onChange={(e) => setWithdrawPassword(e.target.value)}
-                                    placeholder="비밀번호를 입력하세요"
-                                    style={{
-                                        width: "100%",
-                                        padding: "12px 16px",
-                                        border: "1px solid #d1d5db",
-                                        borderRadius: "8px",
-                                        fontSize: "16px",
-                                        outline: "none"
-                                    }}
-                                />
-                            </div>
-
-                            <div style={{ display: "flex", gap: "12px" }}>
-                                <button
-                                    onClick={handleWithdraw}
-                                    disabled={withdrawing}
-                                    style={{
-                                        padding: "12px 24px",
-                                        backgroundColor: withdrawing ? "#9ca3af" : "#e53e3e",
-                                        color: "#fff",
-                                        border: "none",
-                                        borderRadius: "8px",
-                                        fontSize: "16px",
-                                        cursor: withdrawing ? "not-allowed" : "pointer"
-                                    }}
-                                >
-                                    {withdrawing ? "탈퇴 중..." : "회원탈퇴"}
-                                </button>
-                                
-                                <button
-                                    onClick={() => {
-                                        setShowWithdraw(false);
-                                        setWithdrawPassword("");
-                                        setError("");
-                                    }}
-                                    style={{
-                                        padding: "12px 24px",
-                                        backgroundColor: "#f7fafc",
-                                        color: "#4a5568",
-                                        border: "1px solid #e2e8f0",
-                                        borderRadius: "8px",
-                                        fontSize: "16px",
-                                        cursor: "pointer"
-                                    }}
-                                >
-                                    취소
-                                </button>
-                            </div>
-                        </div>
-                    ) : (
-                        <button
-                            onClick={() => setShowWithdraw(true)}
-                            style={{
-                                padding: "12px 24px",
-                                backgroundColor: "#fed7d7",
-                                color: "#e53e3e",
-                                border: "1px solid #feb2b2",
-                                borderRadius: "8px",
-                                fontSize: "16px",
-                                cursor: "pointer"
-                            }}
-                        >
-                            회원탈퇴하기
-                        </button>
-                    )}
                 </div>
             </div>
         </div>
