@@ -66,9 +66,14 @@ export default function PostListPage() {
                 });
 
             } catch (error) {
-                console.error('게시글 목록 로드 실패:', error);
-                setError('게시글 목록을 불러오는데 실패했습니다.');
-                setPosts([]);
+                if (error.response.status == "401") {
+                    setError('게시글 목록을 조회 할 권한이 없습니다.');
+                    setPosts([]);
+                } else{
+                    console.error('게시글 목록 로드 실패:', error);
+                    setError('게시글 목록을 불러오는데 실패했습니다.');
+                    setPosts([]);
+                }
             } finally {
                 setLoading(false);
             }

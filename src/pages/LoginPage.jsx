@@ -107,40 +107,34 @@ export default function LoginPage() {
                             width: "90%",
                             height: 50,
                             marginBottom: 12,
-                            marginRight:20,
-                            marginLeft:20,
-                            background: "#FEE500",
+                            marginRight: 20,
+                            marginLeft: 20,
+                            background: "none",
                             border: "none",
                             borderRadius: 12,
                             cursor: "pointer",
-                            display: "flex",
-                            alignItems: "center",
-                            justifyContent: "center",
-                            fontSize: 16,
-                            fontWeight: 600,
-                            color: "#000",
+                            padding: 0,
                             transition: "all 0.2s ease",
-                            boxShadow: "0 2px 8px rgba(254, 229, 0, 0.3)"
+                            overflow: "hidden"
                         }}
                         onMouseEnter={(e) => {
-                            e.target.style.background = "#F0D000";
                             e.target.style.transform = "translateY(-1px)";
                             e.target.style.boxShadow = "0 4px 12px rgba(254, 229, 0, 0.4)";
                         }}
                         onMouseLeave={(e) => {
-                            e.target.style.background = "#FEE500";
                             e.target.style.transform = "translateY(0px)";
                             e.target.style.boxShadow = "0 2px 8px rgba(254, 229, 0, 0.3)";
                         }}>
-                        <span style={{
-                            display: "inline-block",
-                            width: 20,
-                            height: 20,
-                            marginRight: 8,
-                            background: "#000",
-                            borderRadius: "50%"
-                        }}></span>
-                        카카오로 시작하기
+                        <img
+                            src="/kakao_login_large_wide.png"
+                            alt="카카오로 로그인"
+                            style={{
+                                width: "100%",
+                                height: "100%",
+                                borderRadius: 12,
+                                objectFit: "cover"
+                            }}
+                        />
                     </button>
 
                     <button
