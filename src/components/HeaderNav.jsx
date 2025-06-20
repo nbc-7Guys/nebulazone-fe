@@ -1,7 +1,8 @@
 import React from "react";
-import { useNavigate, useLocation } from "react-router-dom";
-import { JwtManager } from "../utils/JwtManager";
-import { getMyEmailFromJwt, getMyUserIdFromJwt } from "../utils/auth";
+import {useLocation, useNavigate} from "react-router-dom";
+import {JwtManager} from "../utils/JwtManager";
+import {getMyEmailFromJwt, getMyUserIdFromJwt} from "../utils/auth";
+import {authApi} from "../services/api.js";
 
 export default function HeaderNav() {
     const navigate = useNavigate();
@@ -10,7 +11,8 @@ export default function HeaderNav() {
     const userEmail = getMyEmailFromJwt();
     const userId = getMyUserIdFromJwt();
 
-    const handleLogout = () => {
+    const handleLogout = async () => {
+        await authApi.signOut();
         JwtManager.removeTokens();
         navigate("/login");
     };
@@ -46,8 +48,8 @@ export default function HeaderNav() {
                         userSelect: "none"
                     }}
                 >
-                    <img 
-                        src="/logo.png" 
+                    <img
+                        src="/logo.png"
                         alt="NebulaZone"
                         style={{
                             height: "40px",
@@ -57,13 +59,13 @@ export default function HeaderNav() {
                 </div>
 
                 {/* 네비게이션 메뉴 */}
-                <div style={{ display: "flex", alignItems: "center", gap: "20px" }}>
+                <div style={{display: "flex", alignItems: "center", gap: "20px"}}>
                     <NavLink
                         onClick={() => navigate("/products")}
                         active={isActive("/products")}
                         text="상품 목록"
                     />
-                    
+
                     {jwt && (
                         <>
                             <NavLink
@@ -91,10 +93,10 @@ export default function HeaderNav() {
                 </div>
 
                 {/* 사용자 메뉴 */}
-                <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
+                <div style={{display: "flex", alignItems: "center", gap: "12px"}}>
                     {jwt ? (
                         <>
-                            <span style={{ fontSize: "14px", color: "#666" }}>
+                            <span style={{fontSize: "14px", color: "#666"}}>
                                 {userEmail || `사용자 ID: ${userId}`}
                             </span>
                             <button
@@ -171,7 +173,7 @@ export default function HeaderNav() {
     );
 }
 
-function NavLink({ onClick, active, text }) {
+function NavLink({onClick, active, text}) {
     return (
         <button
             onClick={onClick}

@@ -1,12 +1,12 @@
-import React, { useState, useEffect } from "react";
-import { useNavigate, useSearchParams } from "react-router-dom";
+import React, {useEffect, useState} from "react";
+import {useNavigate, useSearchParams} from "react-router-dom";
 import HeaderNav from "../components/HeaderNav";
 import ProductCard from "../components/ProductCard";
 import Pagination from "../components/Pagination";
 import LoadingSpinner from "../components/LoadingSpinner";
 import ErrorMessage from "../components/ErrorMessage";
 import EmptyState from "../components/EmptyState";
-import { productApi } from "../services/api";
+import {productApi} from "../services/api";
 
 export default function ProductListPage() {
     const navigate = useNavigate();
@@ -105,7 +105,7 @@ export default function ProductListPage() {
 
     // 검색 실행
     const handleSearch = () => {
-        setSearchForm(prev => ({ ...prev, page: 1 }));
+        setSearchForm(prev => ({...prev, page: 1}));
     };
 
     // 페이지 변경
@@ -121,8 +121,8 @@ export default function ProductListPage() {
     };
 
     return (
-        <div style={{ background: "#f8fafc", minHeight: "100vh" }}>
-            <HeaderNav />
+        <div style={{background: "#f8fafc", minHeight: "100vh"}}>
+            <HeaderNav/>
 
             <div style={{
                 maxWidth: "1200px",
@@ -130,7 +130,7 @@ export default function ProductListPage() {
                 padding: "40px 20px"
             }}>
                 {/* 헤더 */}
-                <div style={{ marginBottom: "40px" }}>
+                <div style={{marginBottom: "40px"}}>
                     <h1 style={{
                         fontSize: "48px",
                         fontWeight: "bold",
@@ -237,7 +237,7 @@ export default function ProductListPage() {
                         paddingTop: "16px",
                         borderTop: "1px solid #e2e8f0"
                     }}>
-                        <span style={{ fontSize: "14px", fontWeight: "500" }}>가격 범위:</span>
+                        <span style={{fontSize: "14px", fontWeight: "500"}}>가격 범위:</span>
                         <input
                             type="number"
                             placeholder="최소 가격"
@@ -251,7 +251,7 @@ export default function ProductListPage() {
                                 width: "120px"
                             }}
                         />
-                        <span style={{ color: "#718096" }}>~</span>
+                        <span style={{color: "#718096"}}>~</span>
                         <input
                             type="number"
                             placeholder="최대 가격"
@@ -300,23 +300,23 @@ export default function ProductListPage() {
 
                 {/* 상품 목록 */}
                 {loading ? (
-                    <LoadingSpinner size="large" message="중고상품을 불러오는 중..." />
+                    <LoadingSpinner size="large" message="중고상품을 불러오는 중..."/>
                 ) : error ? (
                     <ErrorMessage
                         message={error}
-                        onRetry={() => setSearchForm(prev => ({ ...prev }))}
+                        onRetry={() => setSearchForm(prev => ({...prev}))}
                         retryText="다시 불러오기"
                     />
                 ) : products.length === 0 ? (
                     <EmptyState
                         icon="🔍"
-                        title="등록된 중고상품이 없습니다"
+                        title={searchForm.type === 'AUCTION' ? "등록된 경매가 없습니다" : "등록된 중고상품이 없습니다"}
                         description="다른 검색 조건으로 시도해보시거나 새로운 상품을 등록해보세요."
                         actionButton={
                             <button
                                 onClick={() => {
                                     setSearchForm({
-                                        type: 'DIRECT',
+                                        type: searchForm.type === 'AUCTION' ? 'AUCTION' : 'DIRECT',
                                         productname: '',
                                         sellernickname: '',
                                         priceFrom: '',

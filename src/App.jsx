@@ -11,6 +11,7 @@ import SignUpPage from "./pages/SignUpPage";
 import LoginPage from "./pages/LoginPage";
 import TransactionHistoryPage from "./pages/TransactionHistoryPage";
 import { JwtManager } from "./utils/JwtManager";
+import OAuthRedirectPage from "./pages/OAuthRedirectPage";
 
 function App() {
     return (
@@ -26,6 +27,7 @@ function App() {
                 <Route path="/transactions" element={<TransactionHistoryPage />} />
                 <Route path="/signup" element={<SignUpPage />} />
                 <Route path="/login" element={<LoginPage />} />
+                <Route path="/oauth/redirect" element={<OAuthRedirectPage />} />
             </Routes>
         </BrowserRouter>
     );

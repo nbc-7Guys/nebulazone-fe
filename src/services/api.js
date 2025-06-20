@@ -1,8 +1,8 @@
 import axios from 'axios';
-import { JwtManager } from '../utils/JwtManager';
-import { ENV } from '../utils/env';
-import { getMyUserIdFromJwt } from '../utils/auth';
-import { ErrorHandler } from '../utils/errorHandler';
+import {JwtManager} from '../utils/JwtManager';
+import {ENV} from '../utils/env';
+import {getMyUserIdFromJwt} from '../utils/auth';
+import {ErrorHandler} from '../utils/errorHandler';
 
 const BASE_URL = ENV.API_BASE_URL;
 
@@ -64,7 +64,7 @@ const apiRequest = async (endpoint, options = {}) => {
         // 구체적인 에러 정보 추가
         const errorInfo = ErrorHandler.handleApiError(error);
         console.error(`API Request Failed [${endpoint}]:`, errorInfo);
-        
+
         // 원본 에러에 추가 정보 첨부
         error.errorInfo = errorInfo;
         throw error;
@@ -145,25 +145,25 @@ export const productApi = {
         if (params.to) queryParams.append('to', params.to);
         if (params.page) queryParams.append('page', params.page);
         if (params.size) queryParams.append('size', params.size);
-        
+
         const query = queryParams.toString();
         return apiRequest(`/products${query ? `?${query}` : ''}`);
     },
 
     // 상품 상세 조회
-    getProduct: (catalogId, productId) => 
+    getProduct: (catalogId, productId) =>
         apiRequest(`/catalogs/${catalogId}/products/${productId}`),
 
     // 상품 등록
     createProduct: async (catalogId, productData, images) => {
         const formData = new FormData();
-        
+
         // JSON 파트에 Content-Type 명시적으로 설정
         const productBlob = new Blob([JSON.stringify(productData)], {
             type: 'application/json'
         });
         formData.append('product', productBlob);
-        
+
         if (images && images.length > 0) {
             images.forEach(image => {
                 formData.append('images', image);
@@ -186,13 +186,13 @@ export const productApi = {
     // 상품 수정
     updateProduct: async (catalogId, productId, productData, images) => {
         const formData = new FormData();
-        
+
         // JSON 파트에 Content-Type 명시적으로 설정
         const productBlob = new Blob([JSON.stringify(productData)], {
             type: 'application/json'
         });
         formData.append('product', productBlob);
-        
+
         if (images && images.length > 0) {
             images.forEach(image => {
                 formData.append('images', image);
@@ -300,7 +300,7 @@ export const catalogApi = {
         if (keyword) queryParams.append('keyword', keyword);
         queryParams.append('page', page.toString());
         queryParams.append('size', size.toString());
-        
+
         return apiRequest(`/catalogs?${queryParams.toString()}`);
     },
 
@@ -320,7 +320,7 @@ export const chatApi = {
         try {
             return await apiRequest('/chat/rooms', {
                 method: 'POST',
-                data: { productId },
+                data: {productId},
             });
         } catch (error) {
             const errorInfo = ErrorHandler.handleApiError(error);
@@ -376,7 +376,7 @@ export const userApi = {
     updateProfileImage: async (imageFile) => {
         const formData = new FormData();
         formData.append('profileImage', imageFile);
-        
+
         try {
             const response = await axiosInstance.put('/users', formData, {
                 headers: {
@@ -395,7 +395,7 @@ export const userApi = {
         try {
             return await apiRequest('/users', {
                 method: 'DELETE',
-                data: { password },
+                data: {password},
             });
         } catch (error) {
             const errorInfo = ErrorHandler.handleApiError(error);
@@ -451,4 +451,4 @@ export const pointApi = {
 };
 
 // 추가로 개발된 에러 처리 유틸리티 함수들을 export
-export { ErrorHandler, apiRequestWithAlert };
+export {ErrorHandler, apiRequestWithAlert};
