@@ -94,6 +94,7 @@ const apiRequest = async (endpoint, options = {}, requireAuth = true) => {
         // 인증이 필요한 경우 인증 인스턴스 사용, 그렇지 않으면 공개 인스턴스 사용
         const instance = requireAuth ? axiosInstance : publicAxiosInstance;
         const response = await instance(endpoint, options);
+        console.log(response.data);
         return response.data;
     } catch (error) {
         // 구체적인 에러 정보 추가
@@ -126,7 +127,7 @@ export const authApi = {
             return await apiRequest('/auth/signin', {
                 method: 'POST',
                 data: { email, password },
-            });
+            }, false); // 로그인은 인증이 필요 없음
         } catch (error) {
             // 로그인 실패 시 구체적인 메시지 표시
             const errorInfo = ErrorHandler.handleApiError(error);

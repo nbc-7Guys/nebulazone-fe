@@ -23,15 +23,16 @@ export default function LoginPage() {
         setErrMsg("");
         setLoading(true);
         try {
-            const res = await authApi.signIn(form.email, form.password);
-            if (!res.ok) throw new Error("로그인 실패");
-            const data = await res.json();
-            if (!data.accessToken || !data.refreshToken) throw new Error("토큰이 응답에 없습니다.");
+            const data = await authApi.signIn(form.email, form.password);
+            if (!data.accessToken || !data.refreshToken) {
+                throw new Error("토큰이 응답에 없습니다.");
+            }
             JwtManager.setJwt(data.accessToken, data.refreshToken);
             setForm(INIT_FORM);
             navigate("/", {replace: true});
         } catch (error) {
-            setErrMsg("이메일 또는 비밀번호가 올바르지 않습니다.");
+            console.error("로그인 오류:", error);
+            setErrMsg(error.message || "이메일 또는 비밀번호가 올바르지 않습니다.");
         } finally {
             setLoading(false);
         }
