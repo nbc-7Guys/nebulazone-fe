@@ -29,10 +29,10 @@ import AuctionProductDetailPage from "./pages/AuctionProductDetailPage.jsx";
 function WebSocketProvider({ children }) {
     const [isAuthenticated, setIsAuthenticated] = useState(false);
     const { connect, disconnect, isConnected } = useWebSocket();
-    const { 
-        subscribeToNotifications, 
-        unsubscribeFromNotifications, 
-        requestNotificationPermission 
+    const {
+        subscribeToNotifications,
+        unsubscribeFromNotifications,
+        requestNotificationPermission
     } = useNotificationContext();
     const location = useLocation();
 
@@ -41,10 +41,10 @@ function WebSocketProvider({ children }) {
         const checkAuthStatus = () => {
             const token = JwtManager.getToken();
             const userInfo = JwtManager.getUserInfo();
-            
+
             // 임시: 토큰만 있어도 인증된 것으로 처리 (userInfo가 없을 수 있음)
             const newAuthStatus = !!token;
-            
+
 
             if (newAuthStatus !== isAuthenticated) {
                 setIsAuthenticated(newAuthStatus);
@@ -74,7 +74,7 @@ function WebSocketProvider({ children }) {
         };
 
         window.addEventListener('storage', handleStorageChange);
-        
+
         // 페이지 이동 시에도 체크 (SPA에서 storage 이벤트가 발생하지 않을 수 있음)
         checkAuthStatus();
 
@@ -93,10 +93,10 @@ function WebSocketProvider({ children }) {
 
                     // 브라우저 알림 권한 요청
                     await requestNotificationPermission();
-                    
+
                     // WebSocket 연결
                     const connected = await connect();
-                    
+
                     if (connected) {
 
                         // 알림 구독
@@ -130,10 +130,11 @@ function WebSocketProvider({ children }) {
 
     return children;
 }
+import OAuthRedirectPage from "./pages/OAuthRedirectPage";
 
 function App() {
     const isDevelopment = import.meta.env.DEV;
-    
+
     return (
         <BrowserRouter>
             <ToastProvider position="top-right">
@@ -142,7 +143,7 @@ function App() {
                         <ErrorBoundary>
                             <Routes>
                                 <Route path="/" element={<LandingPage />} />
-                                
+
                                 {/* 상품 관련 라우트 */}
                                 <Route path="/products/direct" element={<ProductListPage />} />
                                 <Route path="/products/auction" element={<ProductListPage />} />
@@ -153,7 +154,7 @@ function App() {
                                 } />
                                 <Route path="/products/direct/:id" element={<DirectProductDetailPage />} />
                                 <Route path="/products/auction/:id" element={<AuctionProductDetailPage />} />
-                                
+
                                 {/* 게시글 관련 라우트 */}
                                 <Route path="/posts" element={<PostListPage />} />
                                 <Route path="/posts/create" element={
@@ -167,7 +168,7 @@ function App() {
                                         <PostEditPage />
                                     </PrivateRoute>
                                 } />
-                                
+
                                 {/* 사용자 관련 라우트 */}
                                 <Route path="/mypage" element={
                                     <PrivateRoute>
@@ -184,7 +185,7 @@ function App() {
                                         <LoginPage />
                                     </PrivateRoute>
                                 } />
-                                
+
                                 {/* 채팅 관련 라우트 */}
                                 <Route path="/chat/:roomId" element={
                                     <PrivateRoute>
@@ -196,11 +197,18 @@ function App() {
                                         <ChatRoomListPage />
                                     </PrivateRoute>
                                 } />
-                                
+
                                 {/* 거래 관련 라우트 */}
                                 <Route path="/transactions" element={
                                     <PrivateRoute>
                                         <TransactionHistoryPage />
+                                    </PrivateRoute>
+                                } />
+
+                                {/* 소셜 로그인 */}
+                                <Route path="/oauth/redirect" element={
+                                    <PrivateRoute>
+                                        <OAuthRedirectPage />
                                     </PrivateRoute>
                                 } />
                             </Routes>

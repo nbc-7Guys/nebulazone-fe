@@ -1,3 +1,5 @@
+import React, {useEffect, useState} from "react";
+import {useNavigate, useSearchParams} from "react-router-dom";
 import React, { useState, useEffect } from "react";
 import { useNavigate, useSearchParams, useLocation } from "react-router-dom"; // useLocation import 추가
 import HeaderNav from "../components/HeaderNav";
@@ -6,6 +8,7 @@ import Pagination from "../components/Pagination";
 import LoadingSpinner from "../components/LoadingSpinner";
 import ErrorMessage from "../components/ErrorMessage";
 import EmptyState from "../components/EmptyState";
+import {productApi} from "../services/api";
 import { productApi, auctionApi } from "../services/api"; // auctionApi import 추가
 
 export default function ProductListPage() {

@@ -1,8 +1,8 @@
 import axios from 'axios';
-import { JwtManager } from '../utils/JwtManager';
-import { ENV } from '../utils/env';
-import { getMyUserIdFromJwt } from '../utils/auth';
-import { ErrorHandler } from '../utils/errorHandler';
+import {JwtManager} from '../utils/JwtManager';
+import {ENV} from '../utils/env';
+import {getMyUserIdFromJwt} from '../utils/auth';
+import {ErrorHandler} from '../utils/errorHandler';
 
 const BASE_URL = ENV.API_BASE_URL;
 
@@ -18,20 +18,12 @@ const axiosInstance = axios.create({
 axiosInstance.interceptors.request.use(
     (config) => {
         const jwt = JwtManager.getJwt();
-        console.log('[API] Request interceptor - JWT token:', jwt ? 'Found' : 'Not found');
-        console.log('[API] Request URL:', config.url);
-        console.log('[API] Request method:', config.method);
-        
         if (jwt) {
             config.headers.Authorization = `Bearer ${jwt}`;
-            console.log('[API] Authorization header added');
-        } else {
-            console.warn('[API] No JWT token found for authenticated request');
         }
         return config;
     },
     (error) => {
-        console.error('[API] Request interceptor error:', error);
         return Promise.reject(error);
     }
 );
@@ -42,14 +34,6 @@ axiosInstance.interceptors.response.use(
         return response;
     },
     (error) => {
-        console.log('[API] Response interceptor - Error:', {
-            status: error.response?.status,
-            message: error.response?.data?.message,
-            url: error.config?.url,
-            method: error.config?.method,
-            hasAuthHeader: !!error.config?.headers?.Authorization
-        });
-
         // JWT 에러인지 확인
         if (ErrorHandler.isJwtError(error)) {
             console.warn('[API] JWT Error detected:', error.response?.data?.message);
@@ -94,7 +78,7 @@ const publicApiRequest = async (endpoint, options = {}) => {
         // 구체적인 에러 정보 추가
         const errorInfo = ErrorHandler.handleApiError(error);
         console.error(`Public API Request Failed [${endpoint}]:`, errorInfo);
-        
+
         // 원본 에러에 추가 정보 첨부
         error.errorInfo = errorInfo;
         throw error;
@@ -112,7 +96,7 @@ const apiRequest = async (endpoint, options = {}, requireAuth = true) => {
         // 구체적인 에러 정보 추가
         const errorInfo = ErrorHandler.handleApiError(error);
         console.error(`API Request Failed [${endpoint}]:`, errorInfo);
-        
+
         // 원본 에러에 추가 정보 첨부
         error.errorInfo = errorInfo;
         throw error;
@@ -193,25 +177,25 @@ export const productApi = {
         if (params.to) queryParams.append('to', params.to);
         if (params.page) queryParams.append('page', params.page);
         if (params.size) queryParams.append('size', params.size);
-        
+
         const query = queryParams.toString();
         return apiRequest(`/products${query ? `?${query}` : ''}`, {}, false); // 인증 필요 없음
     },
 
     // 상품 상세 조회 (인증 필요 없음)
-    getProduct: (catalogId, productId) => 
+    getProduct: (catalogId, productId) =>
         apiRequest(`/catalogs/${catalogId}/products/${productId}`, {}, false), // 인증 필요 없음
 
     // 상품 등록
     createProduct: async (catalogId, productData, images) => {
         const formData = new FormData();
-        
+
         // JSON 파트에 Content-Type 명시적으로 설정
         const productBlob = new Blob([JSON.stringify(productData)], {
             type: 'application/json'
         });
         formData.append('product', productBlob);
-        
+
         if (images && images.length > 0) {
             images.forEach(image => {
                 formData.append('images', image);
@@ -234,13 +218,13 @@ export const productApi = {
     // 상품 수정
     updateProduct: async (catalogId, productId, productData, images) => {
         const formData = new FormData();
-        
+
         // JSON 파트에 Content-Type 명시적으로 설정
         const productBlob = new Blob([JSON.stringify(productData)], {
             type: 'application/json'
         });
         formData.append('product', productBlob);
-        
+
         if (images && images.length > 0) {
             images.forEach(image => {
                 formData.append('images', image);
@@ -375,7 +359,7 @@ export const chatApi = {
         try {
             return await apiRequest('/chat/rooms', {
                 method: 'POST',
-                data: { productId },
+                data: {productId},
             });
         } catch (error) {
             const errorInfo = ErrorHandler.handleApiError(error);
@@ -431,7 +415,7 @@ export const userApi = {
     updateProfileImage: async (imageFile) => {
         const formData = new FormData();
         formData.append('profileImage', imageFile);
-        
+
         try {
             const response = await axiosInstance.put('/users', formData, {
                 headers: {
@@ -450,7 +434,7 @@ export const userApi = {
         try {
             return await apiRequest('/users', {
                 method: 'DELETE',
-                data: { password },
+                data: {password},
             });
         } catch (error) {
             const errorInfo = ErrorHandler.handleApiError(error);
@@ -483,13 +467,13 @@ export const notificationApi = {
     // 읽지 않은 알림 목록 조회
     getUnreadNotifications: () =>
         apiRequest('/notifications'),
-        
+
     // 알림 읽음 처리
     markAsRead: (notificationId) =>
         apiRequest(`/notification/${notificationId}/read`, {
             method: 'PATCH'
         }),
-        
+
     // 모든 알림 읽음 처리
     markAllAsRead: () =>
         apiRequest('/notification/read-all', {
@@ -522,13 +506,13 @@ export const postApi = {
     // 게시글 작성 (인증 필요)
     createPost: async (postData, images) => {
         const formData = new FormData();
-        
+
         // JSON 파트에 Content-Type 명시적으로 설정
         const postBlob = new Blob([JSON.stringify(postData)], {
             type: 'application/json'
         });
         formData.append('post', postBlob);
-        
+
         // 이미지 파일들 추가
         if (images && images.length > 0) {
             images.forEach(image => {
@@ -552,13 +536,13 @@ export const postApi = {
     // 게시글 수정 (인증 필요)
     updatePost: async (postId, postData, images) => {
         const formData = new FormData();
-        
+
         // JSON 파트에 Content-Type 명시적으로 설정
         const postBlob = new Blob([JSON.stringify(postData)], {
             type: 'application/json'
         });
         formData.append('post', postBlob);
-        
+
         // 이미지 파일들 추가
         if (images && images.length > 0) {
             images.forEach(image => {
@@ -594,17 +578,17 @@ export const postApi = {
     // 게시글 목록 검색 (인증 여부를 매개변수로 받음)
     searchPosts: (params = {}, requireAuth = true) => {
         const queryParams = new URLSearchParams();
-        
+
         // 검색 키워드
         if (params.keyword) queryParams.append('keyword', params.keyword);
-        
+
         // 게시글 타입 (필수)
         if (params.type) queryParams.append('type', params.type);
-        
+
         // 페이지네이션
         if (params.page) queryParams.append('page', params.page);
         if (params.size) queryParams.append('size', params.size);
-        
+
         const query = queryParams.toString();
         return apiRequest(`/posts${query ? `?${query}` : ''}`, {}, requireAuth);
     },
@@ -634,7 +618,7 @@ export const commentApi = {
         const queryParams = new URLSearchParams();
         queryParams.append('page', page.toString());
         queryParams.append('size', size.toString());
-        
+
         return apiRequest(`/posts/${postId}/comments?${queryParams.toString()}`, {}, true);
     },
 
@@ -665,4 +649,4 @@ export const commentApi = {
 };
 
 // 추가로 개발된 에러 처리 유틸리티 함수들을 export
-export { ErrorHandler, apiRequestWithAlert };
+export {ErrorHandler, apiRequestWithAlert};

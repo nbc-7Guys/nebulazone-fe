@@ -3,6 +3,11 @@ import { useNavigate, useLocation } from "react-router-dom";
 import { JwtManager } from "../utils/JwtManager";
 import { getMyEmailFromJwt, getMyUserIdFromJwt } from "../utils/auth";
 import NotificationDisplay from "./NotificationDisplay";
+import React from "react";
+import {useLocation, useNavigate} from "react-router-dom";
+import {JwtManager} from "../utils/JwtManager";
+import {getMyEmailFromJwt, getMyUserIdFromJwt} from "../utils/auth";
+import {authApi} from "../services/api.js";
 
 export default function HeaderNav() {
     const navigate = useNavigate();
@@ -12,7 +17,8 @@ export default function HeaderNav() {
     const userId = getMyUserIdFromJwt();
     const [isMenuOpen, setIsMenuOpen] = useState(false);
 
-    const handleLogout = () => {
+    const handleLogout = async () => {
+        await authApi.signOut();
         JwtManager.removeTokens();
         navigate("/login");
         setIsMenuOpen(false);
@@ -77,7 +83,7 @@ export default function HeaderNav() {
                         active={location.pathname.startsWith("/posts")}
                         text="커뮤니티"
                     />
-                    
+
                     {jwt && (
                         <NavLink
                             onClick={() => navigate("/products/create")}
@@ -96,7 +102,7 @@ export default function HeaderNav() {
                             <span style={{ fontSize: "14px", color: "#666" }}>
                                 {userEmail || `사용자 ID: ${userId}`}
                             </span>
-                            
+
                             {/* 햄버거 메뉴 버튼 */}
                             <button
                                 onClick={() => setIsMenuOpen(!isMenuOpen)}
@@ -195,7 +201,7 @@ export default function HeaderNav() {
                                             {userEmail || `User ${userId}`}
                                         </div>
                                     </div>
-                                    
+
                                     <MenuItem
                                         onClick={() => handleMenuItemClick("/mypage")}
                                         text="마이페이지"
@@ -220,13 +226,13 @@ export default function HeaderNav() {
                                         icon="💬"
                                         active={isActive("/chat/rooms")}
                                     />
-                                    
+
                                     <div style={{
                                         height: "1px",
                                         backgroundColor: "#f1f5f9",
                                         margin: "12px 20px"
                                     }}></div>
-                                    
+
                                     <MenuItem
                                         onClick={handleLogout}
                                         text="로그아웃"
@@ -383,7 +389,7 @@ function MenuItem({ onClick, text, icon, active, isLogout }) {
                 }
             }}
         >
-            <span style={{ 
+            <span style={{
                 fontSize: "16px",
                 width: "20px",
                 textAlign: "center"
