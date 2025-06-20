@@ -208,11 +208,7 @@ function App() {
                                 } />
 
                                 {/* 소셜 로그인 */}
-                                <Route path="/oauth/redirect" element={
-                                    <PrivateRoute>
-                                        <OAuthRedirectPage />
-                                    </PrivateRoute>
-                                } />
+                                <Route path="/oauth/redirect" element={<OAuthRedirectPage />} />
 
                                 {/* 토스 관련 라우트 */}
                                 <Route path="/toss" element={
