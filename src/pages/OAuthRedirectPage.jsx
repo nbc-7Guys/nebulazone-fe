@@ -1,9 +1,11 @@
 import {useEffect} from "react";
 import {useNavigate} from "react-router-dom";
 import {JwtManager} from "../utils/JwtManager";
+import {useToastContext} from "../contexts/ToastContext";
 
 export default function OAuthRedirectPage() {
     const navigate = useNavigate();
+    const { toast } = useToastContext();
 
     useEffect(() => {
         // 1. 이미 로그인된 상태면 홈으로
@@ -24,12 +26,25 @@ export default function OAuthRedirectPage() {
             JwtManager.setJwt(accessToken, refreshToken);
             console.log("Tokens stored. Navigating home...");
 
+            // 소셜 로그인 성공 토스트 표시
+            toast.success("소셜 로그인에 성공했습니다!", {
+                title: "환영합니다!",
+                duration: 3000
+            });
+
             // 4. 짧은 지연 후 홈으로 이동
             setTimeout(() => {
                 navigate("/", { replace: true });
             }, 50);
         } else {
             console.error("Tokens missing, redirecting to login");
+            
+            // 소셜 로그인 실패 토스트 표시
+            toast.error("소셜 로그인에 실패했습니다.", {
+                title: "로그인 실패",
+                duration: 5000
+            });
+            
             navigate("/login");
         }
     }, [navigate]);
