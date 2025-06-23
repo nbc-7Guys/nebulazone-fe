@@ -8,10 +8,7 @@ const BASE_URL = ENV.API_BASE_URL;
 
 // Axios 인스턴스 생성
 const axiosInstance = axios.create({
-    baseURL: BASE_URL,
-    headers: {
-        'Content-Type': 'application/json',
-    },
+    baseURL: BASE_URL
 });
 
 // 요청 인터셉터 - JWT 토큰 자동 추가
@@ -126,7 +123,7 @@ export const authApi = {
         try {
             return await apiRequest('/auth/signin', {
                 method: 'POST',
-                data: { email, password },
+                data: {email, password},
             }, false); // 로그인은 인증이 필요 없음
         } catch (error) {
             // 로그인 실패 시 구체적인 메시지 표시
@@ -343,7 +340,7 @@ export const catalogApi = {
         if (keyword) queryParams.append('keyword', keyword);
         queryParams.append('page', page.toString());
         queryParams.append('size', size.toString());
-        
+
         return apiRequest(`/catalogs?${queryParams.toString()}`, {}, false); // 인증 필요 없음
     },
 
@@ -421,10 +418,9 @@ export const userApi = {
         formData.append('profileImage', imageFile);
 
         try {
-            const response = await axiosInstance.put('/users', formData, {
-                headers: {
-                    'Content-Type': 'multipart/form-data',
-                },
+            const response = await apiRequest('/users', {
+                method: 'PUT',
+                data: formData
             });
             return response.data;
         } catch (error) {
