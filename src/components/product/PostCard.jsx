@@ -1,6 +1,6 @@
 import React from "react";
-import { getPostTypeLabel } from "../types/PostType";
-import LazyImage from "./LazyImage";
+import { getPostTypeLabel } from "../../types/PostType";
+import LazyImage from "../common/LazyImage";
 
 export default function PostCard({ post, onClick }) {
     const handleClick = () => {

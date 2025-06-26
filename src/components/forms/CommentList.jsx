@@ -1,11 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import CommentItem from './CommentItem';
 import CommentForm from './CommentForm';
-import LoadingSpinner from './LoadingSpinner';
-import ErrorMessage from './ErrorMessage';
-import { commentApi } from '../services/api';
-import { getMyUserIdFromJwt } from '../utils/auth';
-import { userApi } from '../services/api';
+import LoadingSpinner from '../ui/LoadingSpinner';
+import ErrorMessage from '../common/ErrorMessage';
+import { commentApi } from '../../services/api';
+import { getMyUserIdFromJwt } from '../../utils/auth/auth';
+import { userApi } from '../../services/api';
 
 export default function CommentList({ postId }) {
     const [comments, setComments] = useState([]);

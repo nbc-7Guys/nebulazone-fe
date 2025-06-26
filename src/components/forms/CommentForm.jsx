@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { commentApi } from '../services/api';
-import { getMyUserIdFromJwt } from '../utils/auth';
+import { commentApi } from '../../services/api';
+import { getMyUserIdFromJwt } from '../../utils/auth/auth';
 
 export default function CommentForm({ 
     postId, 

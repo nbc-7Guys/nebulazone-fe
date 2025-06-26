@@ -1,5 +1,5 @@
 import React from 'react';
-import { useToastNotification } from '../hooks/useToastNotification';
+import { useToastNotification } from '../../hooks/useToastNotification';
 
 const ToastDemo = () => {
     const { showSuccess, showError, showWarning, showInfo, messages } = useToastNotification();

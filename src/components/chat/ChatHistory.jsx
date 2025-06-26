@@ -1,5 +1,5 @@
 import React, {useEffect, useRef} from "react";
-import { getMyUserIdFromJwt } from "../utils/auth";
+import { getMyUserIdFromJwt } from "../../utils/auth/auth";
 
 export default function ChatHistory({ chatHistory }) {
     const myUserId = getMyUserIdFromJwt();

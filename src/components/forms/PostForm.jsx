@@ -1,6 +1,6 @@
 import React, { useState, useRef } from "react";
-import { PostType, POST_TYPE_OPTIONS } from "../types/PostType";
-import LoadingSpinner from "./LoadingSpinner";
+import { PostType, POST_TYPE_OPTIONS } from "../../types/PostType";
+import LoadingSpinner from "../ui/LoadingSpinner";
 
 export default function PostForm({
     initialData = {

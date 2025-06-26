@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
-import { useWebSocket } from '../hooks/useWebSocket';
-import { useNotificationContext } from '../contexts/NotificationContext';
-import { JwtManager } from '../utils/JwtManager';
+import { useWebSocket } from '../../hooks/useWebSocket';
+import { useNotificationContext } from '../../contexts/NotificationContext';
+import { JwtManager } from '../../services/managers/JwtManager';
+import axios from 'axios';
 
 const WebSocketStatus = () => {
     const { isConnected, connect, disconnect } = useWebSocket();
@@ -48,21 +49,15 @@ const WebSocketStatus = () => {
         try {
             // URL 파라미터로 userId와 message 전송
             const encodedMessage = encodeURIComponent(message);
-            const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/test/notification?userId=${userInfo.id}&message=${encodedMessage}`, {
-                method: 'POST',
+            const response = await axios.post(`${import.meta.env.VITE_API_BASE_URL}/test/notification?userId=${userInfo.id}&message=${encodedMessage}`, null, {
                 headers: {
                     'Authorization': `Bearer ${JwtManager.getToken()}`
                 }
             });
 
-            if (response.ok) {
-                console.log('[WebSocketStatus] Test notification sent to server');
-                console.log('[WebSocketStatus] 서버에서 WebSocket 알림이 전송됩니다!');
-                setTestMessage(''); // 전송 후 입력창 초기화
-            } else {
-                console.error('[WebSocketStatus] Failed to send test notification');
-                fallbackLocalNotification(message);
-            }
+            console.log('[WebSocketStatus] Test notification sent to server');
+            console.log('[WebSocketStatus] 서버에서 WebSocket 알림이 전송됩니다!');
+            setTestMessage(''); // 전송 후 입력창 초기화
         } catch (error) {
             console.error('[WebSocketStatus] Error sending test notification:', error);
             fallbackLocalNotification(message);

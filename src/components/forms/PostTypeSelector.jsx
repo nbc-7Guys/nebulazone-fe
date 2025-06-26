@@ -1,5 +1,5 @@
 import React from "react";
-import { POST_TYPE_OPTIONS } from "../types/PostType";
+import { POST_TYPE_OPTIONS } from "../../types/PostType";
 
 export default function PostTypeSelector({
     selectedType,

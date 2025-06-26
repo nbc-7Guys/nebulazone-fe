@@ -1,6 +1,6 @@
 import React from 'react';
 import { Navigate, useLocation } from 'react-router-dom';
-import { JwtManager } from '../utils/JwtManager';
+import { JwtManager } from '../../services/managers/JwtManager';
 
 export default function PrivateRoute({ children, requireAuth = true, redirectTo = '/login' }) {
     const location = useLocation();

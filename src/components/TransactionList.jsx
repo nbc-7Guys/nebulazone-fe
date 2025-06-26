@@ -1,6 +1,6 @@
 import React from 'react';
-import TransactionListItem from './TransactionListItem';
-import EmptyState from './EmptyState';
+import TransactionListItem from './transaction/TransactionListItem';
+import EmptyState from './common/EmptyState';
 import './TransactionList.css';
 
 const TransactionList = ({ transactions, loading, onTransactionClick }) => {

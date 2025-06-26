@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
-import { useNotificationContext } from '../contexts/NotificationContext';
-import { NotificationType } from '../types/NotificationType';
+import { useNotificationContext } from '../../contexts/NotificationContext';
+import { NotificationType } from '../../types/NotificationType';
 
 const NotificationDisplay = () => {
     const [isOpen, setIsOpen] = useState(false);
