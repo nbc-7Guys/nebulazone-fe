@@ -37,7 +37,7 @@ const AccountSettings = ({ onWithdraw, withdrawing }) => {
                     color: "#dc2626",
                     marginBottom: "12px"
                 }}>
-                    위험 영역
+                    회원 탈퇴
                 </h4>
                 <p style={{
                     fontSize: "14px",

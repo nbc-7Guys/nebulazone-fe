@@ -58,7 +58,7 @@ const ProfileInfoEditor = ({
                             fontWeight: "500"
                         }}
                     >
-                        수정
+                        닉네임 수정
                     </button>
                 )}
             </div>
