@@ -71,6 +71,11 @@ axiosInstance.interceptors.response.use(
                 console.log('[API] Posts API 401 error - not redirecting, letting retry logic handle it');
                 return Promise.reject(error);
             }
+
+            if (error.config?.url?.includes('/users') && error.config?.method === 'delete') {
+                return Promise.reject(error);
+            }
+
             JwtManager.removeTokens();
             window.location.href = '/login';
             return Promise.reject(error);
@@ -458,15 +463,10 @@ export const userApi = {
 
     // 회원 탈퇴
     withdraw: async (password) => {
-        try {
-            return await apiRequest('/users', {
-                method: 'DELETE',
-                data: {password},
-            });
-        } catch (error) {
-            const errorInfo = ErrorHandler.handleApiError(error);
-            throw new Error(errorInfo.message);
-        }
+        return await apiRequest('/users', {
+            method: 'DELETE',
+            data: {password},
+        });
     },
 };
 
