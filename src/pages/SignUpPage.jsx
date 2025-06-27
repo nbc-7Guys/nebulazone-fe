@@ -3,6 +3,7 @@ import axios from "axios";
 import HeaderNav from "../components/layout/HeaderNav";
 import { ENV } from "../utils/env";
 import { ErrorHandler, ToastManager } from "../utils/error/errorHandler";
+import {useNavigate} from "react-router-dom";
 
 const INIT_FORM = {
     email: "",
@@ -19,6 +20,7 @@ export default function SignUpPage() {
     const [loading, setLoading] = useState(false);
     const [errMsg, setErrMsg] = useState("");
     const [success, setSuccess] = useState(false);
+    const navigate = useNavigate();
 
     // 입력 값 변경
     const onChange = e => {
@@ -71,6 +73,7 @@ export default function SignUpPage() {
             setSuccess(true);
             setForm(INIT_FORM);
             ToastManager.success("회원가입이 완료되었습니다!");
+            navigate("/login");
         } catch (error) {
             console.error("회원가입 실패:", error);
             const errorInfo = ErrorHandler.handleApiError(error);
