@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { auctionApi } from "../services/api";
-import HeaderNav from "../components/HeaderNav";
+import HeaderNav from "../components/layout/HeaderNav";
 
 export default function AuctionProductDetailPage() {
     const { id } = useParams(); // auctionId

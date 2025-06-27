@@ -1,5 +1,5 @@
 import axios from 'axios';
-import { ENV } from "./env";
+import { ENV } from "../../utils/env";
 
 const ACCESS_TOKEN_KEY = "accessToken";
 const REFRESH_TOKEN_KEY = "refreshToken";

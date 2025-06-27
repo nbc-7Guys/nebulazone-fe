@@ -149,6 +149,139 @@ export const DEFAULT_ERROR_MESSAGES = {
 };
 
 /**
+ * API 에러를 표준 형식으로 파싱
+ * @param {Error} error - 원본 에러 객체
+ * @returns {Object} 파싱된 에러 정보
+ */
+export function parseApiError(error) {
+  // 네트워크 에러
+  if (!error.response) {
+    return {
+      status: 0,
+      message: ERROR_CODES.COMMON.NETWORK_ERROR,
+      code: 'NETWORK_ERROR',
+      timestamp: new Date().toISOString(),
+      errors: []
+    };
+  }
+
+  const { status, data } = error.response;
+  
+  return {
+    status,
+    message: data?.message || DEFAULT_ERROR_MESSAGES[status] || '알 수 없는 오류가 발생했습니다.',
+    code: data?.code || `HTTP_${status}`,
+    timestamp: data?.timestamp || new Date().toISOString(),
+    errors: data?.errors || []
+  };
+}
+
+/**
+ * 사용자 친화적인 에러 메시지 생성
+ * @param {Object} apiError - parseApiError로 파싱된 에러
+ * @returns {string} 사용자 친화적인 메시지
+ */
+export function getUserFriendlyMessage(apiError) {
+  // 백엔드에서 전달한 메시지가 있으면 우선 사용
+  if (apiError.message && apiError.message !== DEFAULT_ERROR_MESSAGES[apiError.status]) {
+    return apiError.message;
+  }
+
+  // 상태 코드별 기본 메시지
+  return DEFAULT_ERROR_MESSAGES[apiError.status] || '알 수 없는 오류가 발생했습니다.';
+}
+
+/**
+ * 에러에 따른 액션 결정
+ * @param {Object} apiError - parseApiError로 파싱된 에러
+ * @returns {Object} 액션 정보
+ */
+export function getErrorAction(apiError) {
+  const { status, code } = apiError;
+
+  // JWT 관련 에러 - 로그인 페이지로 리다이렉트
+  if (status === 401 && (code?.includes('JWT') || code?.includes('TOKEN'))) {
+    return { action: 'redirect', redirect: '/login' };
+  }
+
+  // 권한 없음 - 로그인 페이지로 리다이렉트
+  if (status === 401) {
+    return { action: 'redirect', redirect: '/login' };
+  }
+
+  // 금지됨 - 메인 페이지로 리다이렉트
+  if (status === 403) {
+    return { action: 'redirect', redirect: '/' };
+  }
+
+  // 찾을 수 없음 - 이전 페이지로
+  if (status === 404) {
+    return { action: 'navigate_back' };
+  }
+
+  // 유효성 검사 에러 - 폼 처리
+  if (status === 422 || (status === 400 && apiError.errors?.length > 0)) {
+    return { action: 'form_validation' };
+  }
+
+  // 기본값 - 토스트 메시지
+  return { action: 'toast' };
+}
+
+/**
+ * 유효성 검사 에러를 폼 필드별로 매핑
+ * @param {Array} errors - 백엔드 에러 배열
+ * @returns {Object} 필드별 에러 메시지 객체
+ */
+export function mapValidationErrors(errors = []) {
+  const fieldErrors = {};
+  
+  errors.forEach(error => {
+    if (error.field && error.message) {
+      // 필드명을 camelCase로 변환 (예: user_name -> userName)
+      const fieldName = error.field.replace(/_([a-z])/g, (match, letter) => letter.toUpperCase());
+      fieldErrors[fieldName] = error.message;
+    }
+  });
+
+  return fieldErrors;
+}
+
+/**
+ * 네트워크 에러 확인
+ * @param {Error} error - 에러 객체
+ * @returns {boolean} 네트워크 에러 여부
+ */
+export function isNetworkError(error) {
+  return !error.response && (error.code === 'NETWORK_ERROR' || error.message === 'Network Error');
+}
+
+/**
+ * 에러 로깅
+ * @param {Error} error - 에러 객체
+ * @param {Object} context - 추가 컨텍스트 정보
+ */
+export function logError(error, context = {}) {
+  const apiError = parseApiError(error);
+  
+  console.group(`🚨 API Error [${apiError.status}]`);
+  console.error('Message:', apiError.message);
+  console.error('Code:', apiError.code);
+  console.error('Timestamp:', apiError.timestamp);
+  
+  if (apiError.errors?.length > 0) {
+    console.error('Validation Errors:', apiError.errors);
+  }
+  
+  if (Object.keys(context).length > 0) {
+    console.error('Context:', context);
+  }
+  
+  console.error('Original Error:', error);
+  console.groupEnd();
+}
+
+/**
  * 에러 처리 유틸리티 클래스
  */
 export class ErrorHandler {

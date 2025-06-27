@@ -1,5 +1,5 @@
 import { jwtDecode } from "jwt-decode";
-import { JwtManager } from "./JwtManager";
+import { JwtManager } from "../../services/managers/JwtManager";
 
 export function getMyUserIdFromJwt() {
     const jwt = JwtManager.getJwt();

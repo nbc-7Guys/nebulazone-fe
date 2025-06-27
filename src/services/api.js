@@ -1,8 +1,8 @@
 import axios from 'axios';
-import {JwtManager} from '../utils/JwtManager';
+import {JwtManager} from './managers/JwtManager';
 import {ENV} from '../utils/env';
-import {getMyUserIdFromJwt} from '../utils/auth';
-import {ErrorHandler} from '../utils/errorHandler';
+import {getMyUserIdFromJwt} from '../utils/auth/auth';
+import {ErrorHandler, parseApiError, logError, isNetworkError} from '../utils/error/errorHandler';
 
 const BASE_URL = ENV.API_BASE_URL;
 
@@ -34,16 +34,37 @@ axiosInstance.interceptors.response.use(
         return response;
     },
     (error) => {
-        // JWT 에러인지 확인
-        if (ErrorHandler.isJwtError(error)) {
-            console.warn('[API] JWT Error detected:', error.response?.data?.message);
+        // 에러 로깅
+        logError(error, { 
+            interceptor: 'response', 
+            url: error.config?.url,
+            method: error.config?.method 
+        });
+
+        // 네트워크 에러 처리
+        if (isNetworkError(error)) {
+            return Promise.reject(error);
+        }
+
+        const apiError = parseApiError(error);
+        
+        // JWT 에러인지 확인 (개선된 로직)
+        const isJwtError = apiError.status === 401 && (
+            apiError.code?.includes('JWT') || 
+            apiError.code?.includes('TOKEN') ||
+            apiError.message?.toLowerCase().includes('token') ||
+            apiError.message?.toLowerCase().includes('jwt')
+        );
+
+        if (isJwtError) {
+            console.warn('[API] JWT Error detected:', apiError.message);
             JwtManager.removeTokens();
             window.location.href = '/login';
             return Promise.reject(error);
         }
 
         // 401 에러 처리 (일반적인 인증 실패)
-        if (error.response && error.response.status === 401) {
+        if (apiError.status === 401) {
             console.warn('[API] 401 Unauthorized error detected');
             // 게시글 관련 요청의 경우 자동 리다이렉트 하지 않고 에러를 던져서 재시도 로직이 동작하도록 함
             if (error.config?.url?.includes('/posts')) {
@@ -55,8 +76,6 @@ axiosInstance.interceptors.response.use(
             return Promise.reject(error);
         }
 
-        // 에러 로깅
-        console.error('API Request Error:', ErrorHandler.handleApiError(error));
         return Promise.reject(error);
     }
 );
@@ -69,18 +88,22 @@ const publicAxiosInstance = axios.create({
     },
 });
 
-// 인증이 필요 없는 API 요청을 위한 헬퍼 함수
+// 인증이 필요 없는 API 요청을 위한 헬퍼 함수 (현재 사용하지 않음)
+// eslint-disable-next-line no-unused-vars
 const publicApiRequest = async (endpoint, options = {}) => {
     try {
         const response = await publicAxiosInstance(endpoint, options);
         return response.data;
     } catch (error) {
-        // 구체적인 에러 정보 추가
-        const errorInfo = ErrorHandler.handleApiError(error);
-        console.error(`Public API Request Failed [${endpoint}]:`, errorInfo);
-
-        // 원본 에러에 추가 정보 첨부
-        error.errorInfo = errorInfo;
+        // 새로운 에러 핸들링 시스템 사용
+        logError(error, { 
+            type: 'publicApiRequest', 
+            endpoint,
+            options 
+        });
+        
+        const apiError = parseApiError(error);
+        error.apiError = apiError;
         throw error;
     }
 };
@@ -94,12 +117,16 @@ const apiRequest = async (endpoint, options = {}, requireAuth = true) => {
         console.log(response.data);
         return response.data;
     } catch (error) {
-        // 구체적인 에러 정보 추가
-        const errorInfo = ErrorHandler.handleApiError(error);
-        console.error(`API Request Failed [${endpoint}]:`, errorInfo);
-
-        // 원본 에러에 추가 정보 첨부
-        error.errorInfo = errorInfo;
+        // 새로운 에러 핸들링 시스템 사용
+        logError(error, { 
+            type: 'apiRequest', 
+            endpoint,
+            options,
+            requireAuth 
+        });
+        
+        const apiError = parseApiError(error);
+        error.apiError = apiError;
         throw error;
     }
 };

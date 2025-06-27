@@ -1,7 +1,7 @@
 import { useState, useCallback, useRef, useEffect } from 'react';
 import { useWebSocket } from './useWebSocket';
-import { JwtManager } from '../utils/JwtManager';
-import { chatApi } from '../services/api';
+import { JwtManager } from '../services/managers/JwtManager';
+import { chatApi } from '../services/api/chat';
 
 export const useChat = (roomId) => {
     const [messages, setMessages] = useState([]);

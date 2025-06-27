@@ -1,11 +1,11 @@
 import React, { useState, useRef, useEffect } from "react";
 import { useNavigate, useParams } from "react-router-dom";
-import HeaderNav from "../components/HeaderNav";
-import LoadingSpinner from "../components/LoadingSpinner";
-import ErrorMessage from "../components/ErrorMessage";
+import HeaderNav from "../components/layout/HeaderNav";
+import LoadingSpinner from "../components/ui/LoadingSpinner";
+import ErrorMessage from "../components/common/ErrorMessage";
 import { postApi, userApi } from "../services/api";
 import { PostType, POST_TYPE_OPTIONS } from "../types/PostType";
-import { getMyUserIdFromJwt } from "../utils/auth";
+import { getMyUserIdFromJwt } from "../utils/auth/auth";
 
 export default function PostEditPage() {
     const navigate = useNavigate();

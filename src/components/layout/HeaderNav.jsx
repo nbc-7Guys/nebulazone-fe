@@ -75,6 +75,12 @@ export default function HeaderNav() {
                     />
                     
                     <NavLink
+                        onClick={() => navigate("/catalogs")}
+                        active={location.pathname.startsWith("/catalogs")}
+                        text="카탈로그"
+                    />
+                    
+                    <NavLink
                         onClick={() => navigate("/posts")}
                         active={location.pathname.startsWith("/posts")}
                         text="커뮤니티"
@@ -89,8 +95,8 @@ export default function HeaderNav() {
                     )}
 
                     <NavLink
-                        onClick={() => navigate("/toss")}
-                        active={location.pathname.startsWith("/toss")}
+                        onClick={() => navigate("/point/charge")}
+                        active={isActive("/point/charge")}
                         text="포인트 충전"
                     />
                 </div>
@@ -211,6 +217,12 @@ export default function HeaderNav() {
                                         active={isActive("/mypage")}
                                     />
                                     <MenuItem
+                                        onClick={() => handleMenuItemClick("/catalogs")}
+                                        text="카탈로그"
+                                        icon="📖"
+                                        active={location.pathname.startsWith("/catalogs")}
+                                    />
+                                    <MenuItem
                                         onClick={() => handleMenuItemClick("/posts")}
                                         text="커뮤니티"
                                         icon="📝"
@@ -321,6 +333,7 @@ export default function HeaderNav() {
                     }
                 }
             `}</style>
+
         </nav>
     );
 }

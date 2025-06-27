@@ -1,7 +1,7 @@
 import React, { useState, useRef } from "react";
 import { useNavigate } from "react-router-dom";
-import HeaderNav from "../components/HeaderNav";
-import LoadingSpinner from "../components/LoadingSpinner";
+import HeaderNav from "../components/layout/HeaderNav";
+import LoadingSpinner from "../components/ui/LoadingSpinner";
 import { postApi } from "../services/api";
 import { PostType, POST_TYPE_OPTIONS } from "../types/PostType";
 

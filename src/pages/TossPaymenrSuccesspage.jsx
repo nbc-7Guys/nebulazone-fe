@@ -1,6 +1,6 @@
 import React, {useEffect, useState} from "react";
 import {ENV} from '../utils/env';
-import HeaderNav from "../components/HeaderNav.jsx";
+import HeaderNav from "../components/layout/HeaderNav.jsx";
 
 const BASE_URL = ENV.API_BASE_URL;
 

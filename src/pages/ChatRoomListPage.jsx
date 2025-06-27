@@ -1,8 +1,8 @@
 import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import HeaderNav from "../components/HeaderNav";
-import ChatRoomListItem from "../components/ChatRoomListItem";
-import { JwtManager } from "../utils/JwtManager";
+import HeaderNav from "../components/layout/HeaderNav";
+import ChatRoomListItem from "../components/chat/ChatRoomListItem";
+import { JwtManager } from "../services/managers/JwtManager";
 import { chatApi } from "../services/api";
 
 export default function ChatRoomListPage() {

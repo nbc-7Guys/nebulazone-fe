@@ -1,7 +1,7 @@
 import React, { createContext, useContext, useState, useCallback, useEffect } from 'react';
 import { useWebSocket } from '../hooks/useWebSocket';
-import { JwtManager } from '../utils/JwtManager';
-import { notificationApi } from '../services/api';
+import { JwtManager } from '../services/managers/JwtManager';
+import { notificationApi } from '../services/api/notifications';
 import { useToastContext } from './ToastContext';
 
 const NotificationContext = createContext();

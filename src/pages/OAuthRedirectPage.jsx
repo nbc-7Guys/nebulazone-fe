@@ -1,6 +1,6 @@
 import {useEffect} from "react";
 import {useNavigate} from "react-router-dom";
-import {JwtManager} from "../utils/JwtManager";
+import {JwtManager} from "../services/managers/JwtManager";
 import {useToastContext} from "../contexts/ToastContext";
 
 export default function OAuthRedirectPage() {

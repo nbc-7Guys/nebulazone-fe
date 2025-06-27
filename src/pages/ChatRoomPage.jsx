@@ -1,11 +1,11 @@
 import React, { useEffect, useState } from "react";
 import { useLocation, useNavigate, useParams } from "react-router-dom";
-import HeaderNav from "../components/HeaderNav";
-import ChatHistory from "../components/ChatHistory";
-import ChatInput from "../components/ChatInput";
-import { JwtManager } from "../utils/JwtManager";
+import HeaderNav from "../components/layout/HeaderNav";
+import ChatHistory from "../components/chat/ChatHistory";
+import ChatInput from "../components/chat/ChatInput";
+import { JwtManager } from "../services/managers/JwtManager";
 import { productApi, chatApi } from "../services/api";
-import { ErrorHandler, ToastManager } from "../utils/errorHandler";
+import { ErrorHandler, ToastManager } from "../utils/error/errorHandler";
 import { useChat } from "../hooks/useChat";
 import { useWebSocket } from "../hooks/useWebSocket";
 

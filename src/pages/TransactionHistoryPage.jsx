@@ -1,11 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import { transactionApi } from '../services/api';
-import TransactionList from '../components/TransactionList';
-import TransactionDetail from '../components/TransactionDetail';
-import Pagination from '../components/Pagination';
-import LoadingSpinner from '../components/LoadingSpinner';
-import ErrorMessage from '../components/ErrorMessage';
-import HeaderNav from '../components/HeaderNav';
+import TransactionList from '../components/transaction/TransactionList';
+import TransactionDetail from '../components/transaction/TransactionDetail';
+import Pagination from '../components/ui/Pagination';
+import LoadingSpinner from '../components/ui/LoadingSpinner';
+import ErrorMessage from '../components/common/ErrorMessage';
+import HeaderNav from '../components/layout/HeaderNav';
 import './TransactionHistoryPage.css';
 
 const TransactionHistoryPage = () => {

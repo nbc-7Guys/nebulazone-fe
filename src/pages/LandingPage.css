@@ -915,3 +915,153 @@
         grid-template-columns: 1fr;
     }
 }
+
+/* 카탈로그 섹션 */
+.catalog-section {
+    padding: 5rem 0;
+    background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%);
+}
+
+.catalog-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: 2rem;
+    margin: 3rem 0;
+}
+
+.catalog-card {
+    background: #fff;
+    padding: 2rem;
+    border-radius: 16px;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+    cursor: pointer;
+    transition: all 0.3s ease;
+    border: 1px solid #e2e8f0;
+    position: relative;
+    overflow: hidden;
+}
+
+.catalog-card::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 4px;
+    background: linear-gradient(90deg, #38d39f, #2eb888);
+    transform: scaleX(0);
+    transition: transform 0.3s ease;
+}
+
+.catalog-card:hover::before {
+    transform: scaleX(1);
+}
+
+.catalog-card:hover {
+    transform: translateY(-8px);
+    box-shadow: 0 20px 40px rgba(56, 211, 159, 0.2);
+    border-color: #38d39f;
+}
+
+.catalog-type-badge {
+    display: inline-block;
+    background: linear-gradient(135deg, #38d39f, #2eb888);
+    color: #fff;
+    padding: 0.5rem 1rem;
+    border-radius: 20px;
+    font-size: 0.875rem;
+    font-weight: 600;
+    margin-bottom: 1rem;
+}
+
+.catalog-card h3 {
+    font-size: 1.25rem;
+    font-weight: 700;
+    margin-bottom: 0.75rem;
+    color: #1a202c;
+    line-height: 1.4;
+}
+
+.catalog-description {
+    font-size: 0.875rem;
+    color: #6b7280;
+    line-height: 1.6;
+    margin-bottom: 1rem;
+}
+
+.catalog-specs {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+}
+
+.spec-tag {
+    background: #f1f5f9;
+    color: #475569;
+    padding: 0.25rem 0.75rem;
+    border-radius: 12px;
+    font-size: 0.75rem;
+    font-weight: 500;
+}
+
+.no-catalogs {
+    text-align: center;
+    padding: 3rem;
+    color: #6b7280;
+}
+
+.catalog-actions {
+    text-align: center;
+    margin-top: 3rem;
+}
+
+.view-all-button {
+    background: linear-gradient(135deg, #38d39f, #2eb888);
+    color: #fff;
+    border: none;
+    padding: 1rem 2.5rem;
+    border-radius: 50px;
+    font-size: 1rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    box-shadow: 0 4px 15px rgba(56, 211, 159, 0.3);
+}
+
+.view-all-button:hover {
+    background: linear-gradient(135deg, #2eb888, #26a574);
+    transform: translateY(-2px);
+    box-shadow: 0 8px 25px rgba(56, 211, 159, 0.4);
+}
+
+/* 반응형 디자인 - 카탈로그 섹션 */
+@media (max-width: 768px) {
+    .catalog-grid {
+        grid-template-columns: 1fr;
+        gap: 1.5rem;
+        margin: 2rem 0;
+    }
+    
+    .catalog-card {
+        padding: 1.5rem;
+    }
+    
+    .catalog-section {
+        padding: 3rem 0;
+    }
+}
+
+@media (max-width: 480px) {
+    .catalog-card {
+        padding: 1.25rem;
+    }
+    
+    .catalog-card h3 {
+        font-size: 1.125rem;
+    }
+    
+    .view-all-button {
+        padding: 0.875rem 2rem;
+        font-size: 0.875rem;
+    }
+}

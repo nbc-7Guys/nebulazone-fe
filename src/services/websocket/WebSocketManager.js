@@ -1,6 +1,6 @@
 import { Client } from '@stomp/stompjs';
 import SockJS from 'sockjs-client';
-import { JwtManager } from './JwtManager';
+import { JwtManager } from '../managers/JwtManager';
 
 class WebSocketManager {
     constructor() {

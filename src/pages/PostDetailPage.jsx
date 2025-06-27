@@ -1,13 +1,13 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate, useParams } from "react-router-dom";
-import HeaderNav from "../components/HeaderNav";
-import LoadingSpinner from "../components/LoadingSpinner";
-import ErrorMessage from "../components/ErrorMessage";
-import SEOHead from "../components/SEOHead";
-import CommentList from "../components/CommentList";
+import HeaderNav from "../components/layout/HeaderNav";
+import LoadingSpinner from "../components/ui/LoadingSpinner";
+import ErrorMessage from "../components/common/ErrorMessage";
+import SEOHead from "../components/common/SEOHead";
+import CommentList from "../components/forms/CommentList";
 import { postApi, userApi } from "../services/api";
 import { getPostTypeLabel } from "../types/PostType";
-import { getMyUserIdFromJwt } from "../utils/auth";
+import { getMyUserIdFromJwt } from "../utils/auth/auth";
 
 export default function PostDetailPage() {
     const navigate = useNavigate();

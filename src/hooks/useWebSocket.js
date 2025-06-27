@@ -1,6 +1,6 @@
 import { useEffect, useRef, useCallback, useState } from 'react';
-import webSocketManager from '../utils/WebSocketManager';
-import { JwtManager } from '../utils/JwtManager';
+import webSocketManager from '../services/websocket/WebSocketManager';
+import { JwtManager } from '../services/managers/JwtManager';
 
 export const useWebSocket = () => {
     const isInitialized = useRef(false);

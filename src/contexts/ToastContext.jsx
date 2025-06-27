@@ -1,6 +1,6 @@
 import React, { createContext, useContext } from 'react';
 import { useToast } from '../hooks/useToast';
-import ToastContainer from '../components/ToastContainer';
+import ToastContainer from '../components/ui/ToastContainer';
 
 const ToastContext = createContext();
 

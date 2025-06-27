@@ -2,8 +2,8 @@ import React, { useState, useEffect } from "react";
 import { useParams, useNavigate, useLocation } from "react-router-dom";
 import axios from "axios";
 import {productApi} from "../services/api.js";
-import HeaderNav from "../components/HeaderNav";
-import { JwtManager } from "../utils/JwtManager";
+import HeaderNav from "../components/layout/HeaderNav";
+import { JwtManager } from "../services/managers/JwtManager";
 import { ENV } from "../utils/env";
 
 export default function DirectProductDetailPage() {
@@ -152,6 +152,35 @@ export default function DirectProductDetailPage() {
                 <div style={{ color: "#111", fontSize: 22, fontWeight: 600, marginTop: 14 }}>
                     가격: {product.productPrice.toLocaleString()}원
                 </div>
+
+                {/* 카탈로그 링크 */}
+                {catalogId && (
+                    <div style={{ 
+                        marginTop: 18, 
+                        padding: "12px 16px", 
+                        backgroundColor: "#f8fafc", 
+                        borderRadius: 8,
+                        border: "1px solid #e2e8f0"
+                    }}>
+                        <span style={{ fontSize: 14, color: "#666", marginRight: 8 }}>
+                            📖 제품 카탈로그:
+                        </span>
+                        <button 
+                            onClick={() => navigate(`/catalogs/${catalogId}`)}
+                            style={{ 
+                                color: "#38d39f", 
+                                textDecoration: "underline", 
+                                background: "none", 
+                                border: "none", 
+                                cursor: "pointer",
+                                fontSize: 14,
+                                fontWeight: 500
+                            }}
+                        >
+                            상세 사양 및 리뷰 보기 →
+                        </button>
+                    </div>
+                )}
 
                 {/* 버튼들 */}
                 <button

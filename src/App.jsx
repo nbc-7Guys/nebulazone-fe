@@ -14,18 +14,20 @@ import PostListPage from "./pages/PostListPage";
 import PostDetailPage from "./pages/PostDetailPage";
 import PostCreatePage from "./pages/PostCreatePage";
 import PostEditPage from "./pages/PostEditPage";
-import PrivateRoute from "./components/PrivateRoute";
-import ErrorBoundary from "./components/ErrorBoundary";
+import PrivateRoute from "./components/common/PrivateRoute";
+import ErrorBoundary from "./components/common/ErrorBoundary";
 import { Analytics } from "@vercel/analytics/react";
-import { JwtManager } from "./utils/JwtManager";
+import { JwtManager } from "./services/managers/JwtManager";
 import { useWebSocket } from "./hooks/useWebSocket";
 import { NotificationProvider, useNotificationContext } from "./contexts/NotificationContext";
 import { ToastProvider } from "./contexts/ToastContext";
-import ToastDemo from "./components/ToastDemo";
-import WebSocketStatus from "./components/WebSocketStatus";
+import ToastDemo from "./components/ui/ToastDemo";
+import WebSocketStatus from "./components/common/WebSocketStatus";
 import AuctionProductDetailPage from "./pages/AuctionProductDetailPage.jsx";
-import TossPaymentComponent from "./pages/TossPaymentComponent.jsx";
 import TossPaymenrSuccesspage from "./pages/TossPaymenrSuccesspage.jsx";
+import CatalogDetailPage from "./pages/CatalogDetailPage.jsx";
+import CatalogListPage from "./pages/CatalogListPage.jsx";
+import PointChargePage from "./pages/PointChargePage.jsx";
 
 // WebSocket 및 알림 관리 컴포넌트
 function WebSocketProvider({ children }) {
@@ -42,7 +44,7 @@ function WebSocketProvider({ children }) {
     useEffect(() => {
         const checkAuthStatus = () => {
             const token = JwtManager.getToken();
-            const userInfo = JwtManager.getUserInfo();
+            // const userInfo = JwtManager.getUserInfo(); // 현재 사용하지 않음
 
             // 임시: 토큰만 있어도 인증된 것으로 처리 (userInfo가 없을 수 있음)
             const newAuthStatus = !!token;
@@ -156,6 +158,10 @@ function App() {
                                 } />
                                 <Route path="/products/direct/:id" element={<DirectProductDetailPage />} />
                                 <Route path="/products/auction/:id" element={<AuctionProductDetailPage />} />
+                                
+                                {/* 카탈로그 관련 라우트 */}
+                                <Route path="/catalogs" element={<CatalogListPage />} />
+                                <Route path="/catalogs/:catalogId" element={<CatalogDetailPage />} />
 
                                 {/* 게시글 관련 라우트 */}
                                 <Route path="/posts" element={<PostListPage />} />
@@ -210,10 +216,10 @@ function App() {
                                 {/* 소셜 로그인 */}
                                 <Route path="/oauth/redirect" element={<OAuthRedirectPage />} />
 
-                                {/* 토스 관련 라우트 */}
-                                <Route path="/toss" element={
+                                {/* 포인트 충전 관련 라우트 */}
+                                <Route path="/point/charge" element={
                                     <PrivateRoute>
-                                        <TossPaymentComponent />
+                                        <PointChargePage />
                                     </PrivateRoute>
                                 } />
                                 <Route path="/toss/success" element={
@@ -226,9 +232,9 @@ function App() {
                         </ErrorBoundary>
                         <Analytics />
                         {/* 개발 환경에서만 WebSocket 상태 표시 */}
-                        {isDevelopment && <WebSocketStatus />}
+                        {/*{isDevelopment && <WebSocketStatus />}*/}
                         {/* 개발 환경에서만 Toast 데모 표시 */}
-                        {isDevelopment && <ToastDemo />}
+                        {/*{isDevelopment && <ToastDemo />}*/}
                         {/*<WebSocketStatus />*/}
                     </WebSocketProvider>
                 </NotificationProvider>

@@ -1,18 +1,20 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate, useSearchParams, useLocation } from "react-router-dom";
-import HeaderNav from "../components/HeaderNav";
-import Pagination from "../components/Pagination";
-import LoadingSpinner from "../components/LoadingSpinner";
-import ErrorMessage from "../components/ErrorMessage";
-import EmptyState from "../components/EmptyState";
-import SEOHead from "../components/SEOHead";
+import HeaderNav from "../components/layout/HeaderNav";
+import Pagination from "../components/ui/Pagination";
+import LoadingSpinner from "../components/ui/LoadingSpinner";
+import ErrorMessage from "../components/common/ErrorMessage";
+import EmptyState from "../components/common/EmptyState";
+import SEOHead from "../components/common/SEOHead";
 import { postApi } from "../services/api";
 import { PostType, getPostTypeLabel, POST_TYPE_OPTIONS } from "../types/PostType";
+import { useErrorHandler } from "../hooks/useErrorHandler";
 
 export default function PostListPage() {
     const navigate = useNavigate();
     const [searchParams] = useSearchParams();
     const location = useLocation();
+    const { handleError } = useErrorHandler();
 
     // 상태 관리
     const [posts, setPosts] = useState([]);
@@ -66,14 +68,17 @@ export default function PostListPage() {
                 });
 
             } catch (error) {
-                if (error.response.status == "401") {
-                    setError('게시글 목록을 조회 할 권한이 없습니다.');
-                    setPosts([]);
-                } else{
-                    console.error('게시글 목록 로드 실패:', error);
-                    setError('게시글 목록을 불러오는데 실패했습니다.');
-                    setPosts([]);
+                const errorResult = handleError(error, {
+                    context: { action: 'loadPosts', params: activeSearchForm },
+                    showToastOnError: false
+                });
+                
+                if (errorResult.type === 'auth_error') {
+                    setError('게시글 목록을 조회할 권한이 없습니다.');
+                } else {
+                    setError(errorResult.message || '게시글 목록을 불러오는데 실패했습니다.');
                 }
+                setPosts([]);
             } finally {
                 setLoading(false);
             }
@@ -162,7 +167,7 @@ export default function PostListPage() {
     };
 
     return (
-        <div style={{ background: "#f8fafc", minHeight: "100vh" }}>
+        <div className="page-enter min-h-screen bg-secondary">
             <SEOHead
                 title={`${getPostTypeLabel(activeSearchForm.type)} - 커뮤니티 - 네불라존`}
                 description={`네불라존 ${getPostTypeLabel(activeSearchForm.type)}에서 다양한 정보를 공유하고 소통하세요.`}
@@ -171,45 +176,38 @@ export default function PostListPage() {
             />
             <HeaderNav />
 
-            <div style={{
-                maxWidth: "1200px",
-                margin: "0 auto",
-                padding: "40px 20px"
-            }}>
+            <div 
+                role="main"
+                className="max-w-screen-xl mx-auto p-8"
+            >
                 {/* 헤더 */}
-                <div style={{ marginBottom: "40px" }}>
-                    <h1 style={{
-                        fontSize: "48px",
-                        fontWeight: "bold",
-                        marginBottom: "16px",
-                        color: "#1a202c"
-                    }}>
-                        커뮤니티 게시판
+                <div className="text-center mb-8">
+                    <h1 className="text-3xl font-bold mb-4 text-primary">
+                        💬 커뮤니티 게시판
                     </h1>
-                    <p style={{
-                        fontSize: "18px",
-                        color: "#718096"
-                    }}>
-                        네불라존 유저들과 소통하고 정보를 공유해보세요.
+                    <p className="text-lg text-muted">
+                        네불라존 유저들과 소통하고 정보를 공유해보세요
                     </p>
+                    
+                    {/* 키보드 단축키 도움말 */}
+                    <div className="text-xs text-light text-center mt-2">
+                        💡 <strong>Ctrl+K</strong>: 검색 포커스 | <strong>Esc</strong>: 검색 초기화 | <strong>Alt+S</strong>: 메인 컨텐츠로 이동
+                    </div>
                 </div>
 
                 {/* 게시판 타입 선택 */}
-                <div style={{ marginBottom: "20px", display: "flex", gap: "10px" }}>
-                                    {POST_TYPE_OPTIONS.map(option => (
+                <div className="flex justify-center gap-3 mb-6 flex-wrap">
+                    {POST_TYPE_OPTIONS.map((option, index) => (
                         <button
                             key={option.value}
                             onClick={() => handleTypeChange(option.value)}
-                            style={{
-                                padding: "10px 20px",
-                                borderRadius: "8px",
-                                border: `1px solid ${activeSearchForm.type === option.value ? '#38d39f' : '#e2e8f0'}`,
-                                backgroundColor: activeSearchForm.type === option.value ? '#e6fffa' : '#fff',
-                                color: activeSearchForm.type === option.value ? '#38d39f' : '#4a5568',
-                                cursor: "pointer",
-                                fontWeight: "bold",
-                                fontSize: "16px",
-                            }}
+                            className={`px-6 py-3 rounded-full font-semibold text-sm transition-all smooth-transition ${
+                                activeSearchForm.type === option.value 
+                                    ? 'bg-primary text-white shadow-lg hover:shadow-xl hover:-translate-y-1' 
+                                    : 'bg-primary border border-primary-light text-secondary hover:bg-muted hover:-translate-y-1'
+                            }`}
+                            aria-pressed={activeSearchForm.type === option.value}
+                            tabIndex={10 + index}
                         >
                             {option.label}
                         </button>
@@ -217,21 +215,11 @@ export default function PostListPage() {
                 </div>
 
                 {/* 검색 */}
-                <div style={{
-                    backgroundColor: "#fff",
-                    padding: "24px",
-                    borderRadius: "12px",
-                    boxShadow: "0 1px 3px rgba(0,0,0,0.1)",
-                    marginBottom: "32px"
-                }}>
-                    <div style={{
-                        display: "flex",
-                        gap: "12px",
-                        alignItems: "center"
-                    }}>
+                <div className="bg-primary p-6 rounded-lg shadow border mb-8">
+                    <div className="flex gap-4 items-center">
                         <input
                             type="text"
-                            placeholder="제목이나 내용으로 검색..."
+                            placeholder="🔍 제목이나 내용으로 검색..."
                             value={searchForm.keyword}
                             onChange={(e) => handleFormChange('keyword', e.target.value)}
                             onKeyPress={(e) => {
@@ -240,31 +228,22 @@ export default function PostListPage() {
                                     handleSearch();
                                 }
                             }}
-                            style={{
-                                flex: 1,
-                                padding: "12px 16px",
-                                border: "1px solid #e2e8f0",
-                                borderRadius: "6px",
-                                fontSize: "16px",
-                                outline: "none"
-                            }}
+                            className="flex-1 px-4 py-3 border border-light rounded-lg text-base focus:ring transition-fast"
+                            aria-label="게시글 검색"
+                            tabIndex={1}
                         />
                         <button
                             onClick={handleSearch}
                             disabled={loading}
-                            style={{
-                                padding: "12px 24px",
-                                backgroundColor: "#38d39f",
-                                color: "#fff",
-                                border: "none",
-                                borderRadius: "6px",
-                                fontSize: "16px",
-                                fontWeight: "500",
-                                cursor: loading ? "not-allowed" : "pointer",
-                                opacity: loading ? 0.7 : 1
-                            }}
+                            className={`px-6 py-3 rounded-lg text-base font-semibold transition-all ${
+                                loading 
+                                    ? 'bg-muted text-secondary cursor-not-allowed' 
+                                    : 'btn-primary hover:shadow-lg hover:-translate-y-1'
+                            }`}
+                            aria-label="검색 실행"
+                            tabIndex={2}
                         >
-                            {loading ? "검색 중..." : "검색"}
+                            {loading ? "🔄 검색 중..." : "🔍 검색"}
                         </button>
                     </div>
                 </div>
@@ -305,16 +284,7 @@ export default function PostListPage() {
                         actionButton={
                             <button
                                 onClick={() => navigate('/posts/create')}
-                                style={{
-                                    padding: "12px 24px",
-                                    backgroundColor: "#38d39f",
-                                    color: "#fff",
-                                    border: "none",
-                                    borderRadius: "8px",
-                                    fontSize: "16px",
-                                    fontWeight: "500",
-                                    cursor: "pointer"
-                                }}
+                                className="btn-primary px-6 py-3 rounded-lg text-base font-medium hover:shadow-lg hover:-translate-y-1 transition-all"
                             >
                                 게시글 작성하기
                             </button>

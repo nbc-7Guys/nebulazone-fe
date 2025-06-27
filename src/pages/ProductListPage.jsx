@@ -1,11 +1,11 @@
 import React, {useEffect, useState} from "react";
 import { useNavigate, useSearchParams, useLocation } from "react-router-dom"; // useLocation import 추가
-import HeaderNav from "../components/HeaderNav";
-import ProductCard from "../components/ProductCard";
-import Pagination from "../components/Pagination";
-import LoadingSpinner from "../components/LoadingSpinner";
-import ErrorMessage from "../components/ErrorMessage";
-import EmptyState from "../components/EmptyState";
+import HeaderNav from "../components/layout/HeaderNav";
+import ProductCard from "../components/product/ProductCard";
+import Pagination from "../components/ui/Pagination";
+import LoadingSpinner from "../components/ui/LoadingSpinner";
+import ErrorMessage from "../components/common/ErrorMessage";
+import EmptyState from "../components/common/EmptyState";
 import { productApi, auctionApi } from "../services/api"; // auctionApi import 추가
 
 export default function ProductListPage() {
@@ -155,168 +155,116 @@ export default function ProductListPage() {
     };
 
     return (
-        <div style={{ background: "#f8fafc", minHeight: "100vh" }}>
+        <div className="page-enter min-h-screen bg-secondary">
             <HeaderNav />
 
-            <div style={{
-                maxWidth: "1200px",
-                margin: "0 auto",
-                padding: "40px 20px"
-            }}>
+            <div 
+                role="main"
+                className="max-w-screen-xl mx-auto p-8"
+            >
                 {/* 헤더 */}
-                <div style={{ marginBottom: "40px" }}>
-                    <h1 style={{
-                        fontSize: "48px",
-                        fontWeight: "bold",
-                        marginBottom: "16px",
-                        color: "#1a202c"
-                    }}>
-                        {searchForm.type === 'AUCTION' ? '경매 상품' : '직거래 상품'}
+                <div className="text-center mb-8">
+                    <h1 className="text-3xl font-bold mb-4 text-primary">
+                        {searchForm.type === 'AUCTION' ? '⚡ 경매 상품' : '🛒 직거래 상품'}
                     </h1>
-                    <p style={{
-                        fontSize: "18px",
-                        color: "#718096"
-                    }}>
-                        Explore a wide range of secondhand PC parts from trusted sellers.
+                    <p className="text-lg text-muted">
+                        신뢰할 수 있는 판매자들의 다양한 중고 PC 부품을 찾아보세요
                     </p>
+                    
+                    {/* 키보드 단축키 도움말 */}
+                    <div className="text-xs text-light text-center mt-2">
+                        💡 <strong>Ctrl+K</strong>: 검색 포커스 | <strong>Esc</strong>: 검색 초기화 | <strong>Alt+S</strong>: 메인 컨텐츠로 이동
+                    </div>
                 </div>
 
                 {/* 거래 종류 전환 버튼 */}
-                <div style={{ marginBottom: "20px", display: "flex", gap: "10px" }}>
+                <div className="flex justify-center gap-4 mb-6">
                     <button
                         onClick={() => navigate('/products/direct')}
-                        style={{
-                            padding: "10px 20px",
-                            borderRadius: "8px",
-                            border: `1px solid ${searchForm.type === 'DIRECT' ? '#38d39f' : '#e2e8f0'}`,
-                            backgroundColor: searchForm.type === 'DIRECT' ? '#e6fffa' : '#fff',
-                            color: searchForm.type === 'DIRECT' ? '#38d39f' : '#4a5568',
-                            cursor: "pointer",
-                            fontWeight: "bold",
-                            fontSize: "16px",
-                        }}
+                        className={`px-6 py-3 rounded-full font-semibold text-base transition-all ${
+                            searchForm.type === 'DIRECT' 
+                                ? 'bg-primary text-white shadow-lg hover:shadow-xl hover:-translate-y-1' 
+                                : 'bg-primary border border-primary-light text-secondary hover:bg-muted hover:-translate-y-1'
+                        }`}
+                        aria-pressed={searchForm.type === 'DIRECT'}
                     >
-                        직거래
+                        🛒 직거래
                     </button>
                     <button
                         onClick={() => navigate('/products/auction')}
-                        style={{
-                            padding: "10px 20px",
-                            borderRadius: "8px",
-                            border: `1px solid ${searchForm.type === 'AUCTION' ? '#38d39f' : '#e2e8f0'}`,
-                            backgroundColor: searchForm.type === 'AUCTION' ? '#e6fffa' : '#fff',
-                            color: searchForm.type === 'AUCTION' ? '#38d39f' : '#4a5568',
-                            cursor: "pointer",
-                            fontWeight: "bold",
-                            fontSize: "16px",
-                        }}
+                        className={`px-6 py-3 rounded-full font-semibold text-base transition-all ${
+                            searchForm.type === 'AUCTION' 
+                                ? 'bg-primary text-white shadow-lg hover:shadow-xl hover:-translate-y-1' 
+                                : 'bg-primary border border-primary-light text-secondary hover:bg-muted hover:-translate-y-1'
+                        }`}
+                        aria-pressed={searchForm.type === 'AUCTION'}
                     >
-                        경매
+                        ⚡ 경매
                     </button>
                 </div>
 
                 {/* 검색 및 필터 */}
-                <div style={{
-                    backgroundColor: "#fff",
-                    padding: "24px",
-                    borderRadius: "12px",
-                    boxShadow: "0 1px 3px rgba(0,0,0,0.1)",
-                    marginBottom: "32px"
-                }}>
-                    <div style={{
-                        display: "grid",
-                        gridTemplateColumns: "1fr 1fr auto", // 거래 유형 선택 제거
-                        gap: "12px",
-                        alignItems: "center"
-                    }}>
+                <div className="bg-primary p-6 rounded-lg shadow border mb-8">
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4 items-center">
                         {/* 상품명 검색 */}
                         <input
                             type="text"
-                            placeholder="상품명 검색..."
+                            placeholder="🔍 상품명 검색..."
                             value={searchForm.productname}
                             onChange={(e) => handleFormChange('productname', e.target.value)}
                             onKeyPress={(e) => e.key === 'Enter' && handleSearch()}
-                            style={{
-                                padding: "8px 16px",
-                                border: "1px solid #e2e8f0",
-                                borderRadius: "6px",
-                                fontSize: "14px",
-                                outline: "none"
-                            }}
+                            className="px-4 py-3 border border-light rounded-lg text-sm focus:ring transition-fast"
+                            aria-label="상품명 검색"
+                            tabIndex={1}
                         />
 
                         {/* 판매자 검색 */}
                         <input
                             type="text"
-                            placeholder="판매자 닉네임 검색..."
+                            placeholder="👤 판매자 닉네임 검색..."
                             value={searchForm.sellernickname}
                             onChange={(e) => handleFormChange('sellernickname', e.target.value)}
                             onKeyPress={(e) => e.key === 'Enter' && handleSearch()}
-                            style={{
-                                padding: "8px 16px",
-                                border: "1px solid #e2e8f0",
-                                borderRadius: "6px",
-                                fontSize: "14px",
-                                outline: "none"
-                            }}
+                            className="px-4 py-3 border border-light rounded-lg text-sm focus:ring transition-fast"
+                            aria-label="판매자 검색"
+                            tabIndex={2}
                         />
 
                         {/* 검색 버튼 */}
                         <button
                             onClick={handleSearch}
                             disabled={loading}
-                            style={{
-                                padding: "8px 24px",
-                                backgroundColor: "#38d39f",
-                                color: "#fff",
-                                border: "none",
-                                borderRadius: "6px",
-                                fontSize: "14px",
-                                fontWeight: "500",
-                                cursor: loading ? "not-allowed" : "pointer",
-                                opacity: loading ? 0.7 : 1
-                            }}
+                            className={`px-6 py-3 rounded-lg text-sm font-semibold transition-all ${
+                                loading 
+                                    ? 'bg-muted text-secondary cursor-not-allowed' 
+                                    : 'btn-primary hover:shadow-lg hover:-translate-y-1'
+                            }`}
+                            aria-label="검색 실행"
+                            tabIndex={3}
                         >
-                            {loading ? "검색 중..." : "Search"}
+                            {loading ? "🔄 검색 중..." : "🔍 검색"}
                         </button>
                     </div>
 
                     {/* 가격 범위 필터 */}
-                    <div style={{
-                        display: "flex",
-                        gap: "12px",
-                        alignItems: "center",
-                        marginTop: "16px",
-                        paddingTop: "16px",
-                        borderTop: "1px solid #e2e8f0"
-                    }}>
-                        <span style={{ fontSize: "14px", fontWeight: "500" }}>가격 범위:</span>
+                    <div className="flex flex-wrap items-center gap-3 mt-4 pt-4 border-t border-light">
+                        <span className="text-sm font-medium text-secondary">💰 가격 범위:</span>
                         <input
                             type="number"
                             placeholder="최소 가격"
                             value={searchForm.priceFrom}
                             onChange={(e) => handleFormChange('priceFrom', e.target.value)}
-                            style={{
-                                padding: "6px 12px",
-                                border: "1px solid #e2e8f0",
-                                borderRadius: "4px",
-                                fontSize: "14px",
-                                width: "120px"
-                            }}
+                            className="px-3 py-2 border border-light rounded text-sm w-32 focus:ring transition-fast"
+                            min="0"
                         />
-                        <span style={{ color: "#718096" }}>~</span>
+                        <span className="text-muted">~</span>
                         <input
                             type="number"
                             placeholder="최대 가격"
                             value={searchForm.priceTo}
                             onChange={(e) => handleFormChange('priceTo', e.target.value)}
-                            style={{
-                                padding: "6px 12px",
-                                border: "1px solid #e2e8f0",
-                                borderRadius: "4px",
-                                fontSize: "14px",
-                                width: "120px"
-                            }}
+                            className="px-3 py-2 border border-light rounded text-sm w-32 focus:ring transition-fast"
+                            min="0"
                         />
                         {(searchForm.priceFrom || searchForm.priceTo) && (
                             <button
@@ -324,19 +272,24 @@ export default function ProductListPage() {
                                     handleFormChange('priceFrom', '');
                                     handleFormChange('priceTo', '');
                                 }}
-                                style={{
-                                    padding: "4px 8px",
-                                    backgroundColor: "#f7fafc",
-                                    color: "#4a5568",
-                                    border: "1px solid #e2e8f0",
-                                    borderRadius: "4px",
-                                    fontSize: "12px",
-                                    cursor: "pointer"
-                                }}
+                                className="px-3 py-1 bg-muted text-secondary border border-light rounded text-xs hover:bg-secondary transition-fast"
                             >
                                 초기화
                             </button>
                         )}
+                    </div>
+
+                    {/* 카탈로그 바로가기 */}
+                    <div className="mt-4 pt-4 border-t border-light text-center">
+                        <button
+                            onClick={() => navigate('/catalogs')}
+                            className="btn-primary px-6 py-3 rounded-lg text-sm font-medium hover:shadow-lg hover:-translate-y-1 transition-all inline-flex items-center gap-2"
+                        >
+                            📖 제품 카탈로그 보기
+                        </button>
+                        <p className="text-xs text-muted mt-2 mb-0">
+                            제품 상세 사양과 리뷰를 확인하세요
+                        </p>
                     </div>
                 </div>
 

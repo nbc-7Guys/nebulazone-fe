@@ -1,8 +1,8 @@
 import React, { useState } from "react";
 import axios from "axios";
-import HeaderNav from "../components/HeaderNav";
+import HeaderNav from "../components/layout/HeaderNav";
 import { ENV } from "../utils/env";
-import { ErrorHandler, ToastManager } from "../utils/errorHandler";
+import { ErrorHandler, ToastManager } from "../utils/error/errorHandler";
 
 const INIT_FORM = {
     email: "",

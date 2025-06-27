@@ -1,7 +1,7 @@
 import React, {useState} from "react";
 import {useNavigate} from "react-router-dom";
-import HeaderNav from "../components/HeaderNav";
-import {JwtManager} from "../utils/JwtManager";
+import HeaderNav from "../components/layout/HeaderNav";
+import {JwtManager} from "../services/managers/JwtManager";
 import {ENV} from "../utils/env";
 import {authApi} from "../services/api.js";
 import {useToastContext} from "../contexts/ToastContext";

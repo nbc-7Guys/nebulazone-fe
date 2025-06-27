@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import HeaderNav from '../components/HeaderNav';
-import { JwtManager } from '../utils/JwtManager';
-import { auctionApi } from '../services/api';
+import HeaderNav from '../components/layout/HeaderNav';
+import { JwtManager } from '../services/managers/JwtManager';
+import { auctionApi, catalogApi } from '../services/api/index';
 import './LandingPage.css';
 
 const LandingPage = () => {
@@ -10,6 +10,7 @@ const LandingPage = () => {
     const jwt = JwtManager.getJwt();
     const [popularAuctions, setPopularAuctions] = useState([]);
     const [closingAuctions, setClosingAuctions] = useState([]);
+    const [popularCatalogs, setPopularCatalogs] = useState([]);
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState(null);
 
@@ -61,6 +62,15 @@ const LandingPage = () => {
                 
                 console.log('처리된 마감 임박 경매 데이터:', closingData);
                 setClosingAuctions(closingData?.slice(0, 4) || []); // 상위 4개만 표시
+                
+                // 인기 카탈로그 가져오기 (CPU 카테고리에서 4개)
+                try {
+                    const catalogResponse = await catalogApi.getCatalogs('', 1, 4, 'CPU');
+                    setPopularCatalogs(catalogResponse?.content || []);
+                } catch (catalogError) {
+                    console.error('카탈로그 데이터를 가져오는 중 오류 발생:', catalogError);
+                    // 카탈로그 오류는 전체 페이지 로딩에 영향을 주지 않도록 함
+                }
                 
                 setError(null);
             } catch (err) {
