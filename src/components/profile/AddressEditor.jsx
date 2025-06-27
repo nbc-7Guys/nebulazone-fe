@@ -1,15 +1,52 @@
-import React from 'react';
+import React, {useState} from 'react';
 
 const AddressEditor = ({
-    user,
-    editMode,
-    setEditMode,
-    formData,
-    setFormData,
-    updating,
-    onUpdate,
-    onCancel
-}) => {
+                           user,
+                           onAddAddress,      // (address) => Promise
+                           onUpdateAddress,   // (nickname, address) => Promise
+                           onDeleteAddress    // (nickname) => Promise
+                       }) => {
+    const [editMode, setEditMode] = useState(null); // 'edit', 'add', null
+    const [selectedNickname, setSelectedNickname] = useState(null);
+    const [formData, setFormData] = useState({
+        roadAddress: '',
+        detailAddress: '',
+        addressNickname: ''
+    });
+    const [updating, setUpdating] = useState(false);
+
+    // 수정 시작
+    const handleEdit = (address) => {
+        setEditMode('edit');
+        setSelectedNickname(address.addressNickname);
+        setFormData({...address});
+    };
+
+    // 삭제
+    const handleDelete = async (address) => {
+        if (!window.confirm('정말 삭제하시겠습니까?')) return;
+        setUpdating(true);
+        try {
+            await onDeleteAddress(address);
+            setEditMode(null);
+            setSelectedNickname(null);
+        } finally {
+            setUpdating(false);
+        }
+    };
+
+    // 추가 시작
+    const handleAdd = () => {
+        setEditMode('add');
+        setSelectedNickname(null);
+        setFormData({
+            roadAddress: '',
+            detailAddress: '',
+            addressNickname: ''
+        });
+    };
+
+    // 입력값 변경
     const handleInputChange = (field, value) => {
         setFormData(prev => ({
             ...prev,
@@ -17,14 +54,38 @@ const AddressEditor = ({
         }));
     };
 
-    const handleSubmit = (e) => {
+    // 저장(수정/추가)
+    const handleSubmit = async (e) => {
         e.preventDefault();
-        onUpdate();
+        setUpdating(true);
+        try {
+            if (editMode === 'edit') {
+                await onUpdateAddress(selectedNickname, formData);
+            } else {
+                await onAddAddress(formData);
+            }
+            setEditMode(null);
+            setSelectedNickname(null);
+            setFormData({
+                roadAddress: '',
+                detailAddress: '',
+                addressNickname: ''
+            });
+        } finally {
+            setUpdating(false);
+        }
     };
 
-    const defaultAddress = user?.addresses?.find(addr =>
-        addr.addressNickname === "기본배송지" || user?.addresses?.length === 1
-    ) || {};
+    // 취소
+    const handleCancel = () => {
+        setEditMode(null);
+        setSelectedNickname(null);
+        setFormData({
+            roadAddress: '',
+            detailAddress: '',
+            addressNickname: ''
+        });
+    };
 
     return (
         <div style={{
@@ -34,42 +95,98 @@ const AddressEditor = ({
             boxShadow: "0 1px 3px rgba(0,0,0,0.1)",
             marginBottom: "24px"
         }}>
-            <div style={{
-                display: "flex",
-                justifyContent: "space-between",
-                alignItems: "center",
-                marginBottom: "20px"
-            }}>
-                <h3 style={{
-                    fontSize: "20px",
-                    fontWeight: "600",
-                    color: "#1a202c",
-                    margin: 0
-                }}>
-                    배송 주소
-                </h3>
-                {editMode !== 'address' && (
-                    <button
-                        onClick={() => setEditMode('address')}
-                        style={{
-                            padding: "8px 16px",
-                            backgroundColor: "#38d39f",
-                            color: "#fff",
-                            border: "none",
-                            borderRadius: "6px",
-                            fontSize: "14px",
-                            cursor: "pointer",
-                            fontWeight: "500"
-                        }}
-                    >
-                        수정
-                    </button>
+            <h3 style={{fontSize: "20px", fontWeight: "600", color: "#1a202c", marginBottom: "20px"}}>
+                주소 목록
+            </h3>
+            {/* 주소 목록 */}
+            <ul style={{listStyle: "none", padding: 0, marginBottom: "20px"}}>
+                {user.addresses && user.addresses.length > 0 ? (
+                    user.addresses.map((address) => (
+                        <li key={address.addressNickname} style={{
+                            background: "#f9fafb",
+                            borderRadius: "8px",
+                            padding: "18px",
+                            marginBottom: "14px",
+                            display: "flex",
+                            justifyContent: "space-between",
+                            alignItems: "center"
+                        }}>
+                            <div>
+                                <div>
+                                    <span style={{fontWeight: "600"}}>별칭:</span> {address.addressNickname}
+                                </div>
+                                <div>
+                                    <span style={{fontWeight: "600"}}>도로명 주소:</span> {address.roadAddress}
+                                </div>
+                                <div>
+                                    <span style={{fontWeight: "600"}}>상세 주소:</span> {address.detailAddress}
+                                </div>
+                            </div>
+                            <div>
+                                <button
+                                    onClick={() => handleEdit(address)}
+                                    style={{
+                                        marginRight: "8px",
+                                        padding: "6px 12px",
+                                        background: "#38d39f",
+                                        color: "#fff",
+                                        border: "none",
+                                        borderRadius: "6px",
+                                        fontSize: "14px",
+                                        cursor: "pointer"
+                                    }}
+                                >
+                                    수정
+                                </button>
+                                <button
+                                    onClick={() => handleDelete(address)}
+                                    style={{
+                                        padding: "6px 12px",
+                                        background: "#e53e3e",
+                                        color: "#fff",
+                                        border: "none",
+                                        borderRadius: "6px",
+                                        fontSize: "14px",
+                                        cursor: "pointer"
+                                    }}
+                                >
+                                    삭제
+                                </button>
+                            </div>
+                        </li>
+                    ))
+                ) : (
+                    <li style={{
+                        color: "#6b7280",
+                        padding: "16px",
+                        textAlign: "center"
+                    }}>
+                        등록된 주소가 없습니다.
+                    </li>
                 )}
-            </div>
+            </ul>
+            {/* 주소 추가 버튼 */}
+            <button
+                onClick={handleAdd}
+                style={{
+                    padding: "10px 20px",
+                    background: "#3182ce",
+                    color: "#fff",
+                    border: "none",
+                    borderRadius: "6px",
+                    fontSize: "15px",
+                    fontWeight: "500",
+                    cursor: "pointer",
+                    marginBottom: "18px"
+                }}
+            >
+                주소 추가
+            </button>
 
-            {editMode === 'address' ? (
-                <form onSubmit={handleSubmit}>
-                    <div style={{ marginBottom: "16px" }}>
+            {/* 입력/수정 폼 */}
+            {(editMode === 'edit' || editMode === 'add') && (
+                <form onSubmit={handleSubmit} style={{marginTop: "20px"}}>
+                    <div style={{marginBottom: "16px"}}>
                         <label style={{
                             display: "block",
                             fontSize: "14px",
@@ -95,7 +212,7 @@ const AddressEditor = ({
                             }}
                         />
                     </div>
-                    <div style={{ marginBottom: "16px" }}>
+                    <div style={{marginBottom: "16px"}}>
                         <label style={{
                             display: "block",
                             fontSize: "14px",
@@ -120,7 +237,7 @@ const AddressEditor = ({
                             }}
                         />
                     </div>
-                    <div style={{ marginBottom: "20px" }}>
+                    <div style={{marginBottom: "20px"}}>
                         <label style={{
                             display: "block",
                             fontSize: "14px",
@@ -128,13 +245,14 @@ const AddressEditor = ({
                             marginBottom: "6px",
                             color: "#374151"
                         }}>
-                            주소 별칭
+                            주소 별칭 *
                         </label>
                         <input
                             type="text"
                             value={formData.addressNickname}
                             onChange={(e) => handleInputChange('addressNickname', e.target.value)}
-                            placeholder="예: 집, 회사 (기본값: 기본배송지)"
+                            placeholder="예: 집, 회사"
+                            required
                             style={{
                                 width: "100%",
                                 padding: "10px 12px",
@@ -152,7 +270,7 @@ const AddressEditor = ({
                     }}>
                         <button
                             type="button"
-                            onClick={onCancel}
+                            onClick={handleCancel}
                             style={{
                                 padding: "8px 16px",
                                 backgroundColor: "#f7fafc",
@@ -182,71 +300,6 @@ const AddressEditor = ({
                         </button>
                     </div>
                 </form>
-            ) : (
-                <div>
-                    {defaultAddress.roadAddress ? (
-                        <div style={{
-                            display: "grid",
-                            gridTemplateColumns: "100px 1fr",
-                            gap: "12px",
-                            alignItems: "start"
-                        }}>
-                            <span style={{
-                                fontSize: "14px",
-                                color: "#6b7280",
-                                fontWeight: "500"
-                            }}>
-                                도로명:
-                            </span>
-                            <span style={{
-                                fontSize: "16px",
-                                color: "#1a202c"
-                            }}>
-                                {defaultAddress.roadAddress}
-                            </span>
-
-                            {defaultAddress.detailAddress && (
-                                <>
-                                    <span style={{
-                                        fontSize: "14px",
-                                        color: "#6b7280",
-                                        fontWeight: "500"
-                                    }}>
-                                        상세주소:
-                                    </span>
-                                    <span style={{
-                                        fontSize: "16px",
-                                        color: "#1a202c"
-                                    }}>
-                                        {defaultAddress.detailAddress}
-                                    </span>
-                                </>
-                            )}
-
-                            <span style={{
-                                fontSize: "14px",
-                                color: "#6b7280",
-                                fontWeight: "500"
-                            }}>
-                                별칭:
-                            </span>
-                            <span style={{
-                                fontSize: "16px",
-                                color: "#1a202c"
-                            }}>
-                                {defaultAddress.addressNickname || "기본배송지"}
-                            </span>
-                        </div>
-                    ) : (
-                        <p style={{
-                            fontSize: "14px",
-                            color: "#6b7280",
-                            margin: 0
-                        }}>
-                            등록된 배송 주소가 없습니다. 주소를 등록해주세요.
-                        </p>
-                    )}
-                </div>
             )}
         </div>
     );

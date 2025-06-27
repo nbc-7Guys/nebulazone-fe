@@ -1,18 +1,12 @@
-import React, { useEffect, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import React, {useEffect, useState} from "react";
+import {useNavigate} from "react-router-dom";
 import HeaderNav from "../components/layout/HeaderNav";
 import LoadingSpinner from "../components/ui/LoadingSpinner";
 import ErrorMessage from "../components/common/ErrorMessage";
-import { userApi } from "../services/api";
-import { JwtManager } from "../services/managers/JwtManager";
-import { ErrorHandler, ToastManager } from "../utils/error/errorHandler";
-import {
-    ProfileHeader,
-    ProfileInfoEditor,
-    PasswordEditor,
-    AddressEditor,
-    AccountSettings
-} from "../components/profile";
+import {userApi} from "../services/api/index.js";
+import {JwtManager} from "../services/managers/index.js";
+import {ErrorHandler, ToastManager} from "../utils/error/errorHandler";
+import {AccountSettings, AddressEditor, PasswordEditor, ProfileHeader, ProfileInfoEditor} from "../components/profile";
 
 export default function MyPage() {
     const navigate = useNavigate();
@@ -85,7 +79,7 @@ export default function MyPage() {
         setError("");
 
         try {
-            await userApi.updateProfile({ nickname: formData.nickname });
+            await userApi.updateProfile({nickname: formData.nickname});
             await loadUserProfile();
             setEditMode(null);
             ToastManager.success('닉네임이 성공적으로 변경되었습니다.');
@@ -149,33 +143,51 @@ export default function MyPage() {
         }
     };
 
-    // 주소 수정
-    const handleUpdateAddress = async () => {
-        if (!formData.roadAddress.trim()) {
-            ToastManager.error('도로명 주소를 입력해주세요.');
-            return;
-        }
-
+    // 주소 추가
+    const handleAddAddress = async (address) => {
         setUpdating(true);
-        setError("");
-
         try {
-            const updateData = {
-                addresses: [{
-                    roadAddress: formData.roadAddress,
-                    detailAddress: formData.detailAddress,
-                    addressNickname: formData.addressNickname || "기본배송지"
-                }]
-            };
-
-            await userApi.updateProfile(updateData);
-            await loadUserProfile();
-            setEditMode(null);
-            ToastManager.success('주소가 성공적으로 변경되었습니다.');
+            await userApi.addAddress(address); // nickname 포함된 address 객체
+            await loadUserProfile(); // 유저 정보 새로고침
+            ToastManager.success('주소가 성공적으로 추가되었습니다.');
         } catch (error) {
-            console.error('주소 수정 실패:', error);
+            const errorInfo = ErrorHandler.handleApiError(error);
+            ToastManager.error(errorInfo.message || '주소 추가에 실패했습니다.');
+        } finally {
+            setUpdating(false);
+        }
+    };
+
+    // 주소 수정
+    const handleUpdateAddress = async (oldAddressNickname, address) => {
+        setUpdating(true);
+        try {
+            await userApi.updateAddress({
+                oldAddressNickname,
+                roadAddress: address.roadAddress,
+                detailAddress: address.detailAddress,
+                addressNickname: address.addressNickname
+            });
+            await loadUserProfile();
+            ToastManager.success('주소가 성공적으로 수정되었습니다.');
+        } catch (error) {
             const errorInfo = ErrorHandler.handleApiError(error);
             ToastManager.error(errorInfo.message || '주소 수정에 실패했습니다.');
+        } finally {
+            setUpdating(false);
+        }
+    };
+
+    // 주소 삭제
+    const handleDeleteAddress = async (address) => {
+        setUpdating(true);
+        try {
+            await userApi.deleteAddress(address);
+            await loadUserProfile();
+            ToastManager.success('주소가 성공적으로 삭제되었습니다.');
+        } catch (error) {
+            const errorInfo = ErrorHandler.handleApiError(error);
+            ToastManager.error(errorInfo.message || '주소 삭제에 실패했습니다.');
         } finally {
             setUpdating(false);
         }
@@ -242,26 +254,25 @@ export default function MyPage() {
                 return handleUpdateNickname;
             case 'password':
                 return handleUpdatePassword;
-            case 'address':
-                return handleUpdateAddress;
             default:
-                return () => {};
+                return () => {
+                };
         }
     };
 
     if (loading) {
         return (
-            <div style={{ minHeight: "100vh", backgroundColor: "#f8fafc" }}>
-                <HeaderNav />
-                <LoadingSpinner message="프로필을 불러오는 중..." />
+            <div style={{minHeight: "100vh", backgroundColor: "#f8fafc"}}>
+                <HeaderNav/>
+                <LoadingSpinner message="프로필을 불러오는 중..."/>
             </div>
         );
     }
 
     return (
-        <div style={{ minHeight: "100vh", backgroundColor: "#f8fafc" }}>
-            <HeaderNav />
-            
+        <div style={{minHeight: "100vh", backgroundColor: "#f8fafc"}}>
+            <HeaderNav/>
+
             <div style={{
                 maxWidth: "800px",
                 margin: "0 auto",
@@ -271,13 +282,13 @@ export default function MyPage() {
                     <ErrorMessage
                         message={error}
                         onRetry={loadUserProfile}
-                        style={{ marginBottom: "24px" }}
+                        style={{marginBottom: "24px"}}
                     />
                 )}
 
-                <ProfileHeader 
-                    user={user} 
-                    onUserUpdate={loadUserProfile} 
+                <ProfileHeader
+                    user={user}
+                    onUserUpdate={loadUserProfile}
                 />
 
                 <ProfileInfoEditor
@@ -303,13 +314,9 @@ export default function MyPage() {
 
                 <AddressEditor
                     user={user}
-                    editMode={editMode}
-                    setEditMode={setEditMode}
-                    formData={formData}
-                    setFormData={setFormData}
-                    updating={updating}
-                    onUpdate={getUpdateHandler()}
-                    onCancel={handleCancelEdit}
+                    onAddAddress={handleAddAddress}
+                    onUpdateAddress={handleUpdateAddress}
+                    onDeleteAddress={handleDeleteAddress}
                 />
 
                 <AccountSettings
