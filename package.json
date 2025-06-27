@@ -4,8 +4,8 @@
   "version": "0.0.0",
   "type": "module",
   "scripts": {
-    "dev": "npx --yes vite",
-    "build": "npx --yes vite build",
+    "dev": "vite dev",
+    "build": "vite build",
     "lint": "eslint .",
     "preview": "npx --yes vite preview",
     "deploy:vercel": "vercel --prod",
@@ -14,7 +14,6 @@
     "dev:clean": "npx --yes vite --force --clearCache"
   },
   "dependencies": {
-    "@rollup/rollup-win32-x64-msvc": "^4.44.1",
     "@stomp/stompjs": "^7.1.1",
     "@tosspayments/tosspayments-sdk": "^2.3.5",
     "@vercel/analytics": "^1.5.0",
