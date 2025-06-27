@@ -1,5 +1,5 @@
 import { useState, useCallback, useEffect } from 'react';
-import { postApi } from '../services/api/posts';
+import { postApi } from '../services/api';
 import { PostType } from '../types/PostType';
 
 export const usePosts = (initialFilters = {}) => {

@@ -3,7 +3,7 @@ import {useNavigate} from "react-router-dom";
 import HeaderNav from "../components/layout/HeaderNav";
 import {JwtManager} from "../services/managers/JwtManager";
 import {ENV} from "../utils/env";
-import {authApi} from "../services/api.js";
+import {authApi} from "../services/api";
 import {useToastContext} from "../contexts/ToastContext";
 
 const INIT_FORM = {email: "", password: ""};

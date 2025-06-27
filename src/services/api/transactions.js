@@ -2,24 +2,20 @@ import { apiRequest } from './core';
 
 const transactionApi = {
     // 내 거래 내역 조회
-    getMyTransactions: async (page = 0, size = 10) => {
-        return await apiRequest(`/transactions/me?page=${page}&size=${size}`);
-    },
+    getMyTransactions: (page = 1, size = 20) =>
+        apiRequest(`/transactions/me?page=${page}&size=${size}`),
 
     // 내 거래 상세 조회
-    getMyTransaction: async (transactionId) => {
-        return await apiRequest(`/transactions/me/${transactionId}`);
-    },
+    getMyTransaction: (transactionId) =>
+        apiRequest(`/transactions/${transactionId}/me`),
 
-    // 모든 거래 내역 조회 (관리자)
-    getTransactions: async (page = 0, size = 10) => {
-        return await apiRequest(`/transactions?page=${page}&size=${size}`);
-    },
+    // 일반 거래 내역 조회 (관리자용)
+    getTransactions: (page = 1, size = 10) =>
+        apiRequest(`/transactions?page=${page}&size=${size}`),
 
-    // 거래 상세 조회 (관리자)
-    getTransaction: async (transactionId) => {
-        return await apiRequest(`/transactions/${transactionId}`);
-    }
+    // 일반 거래 상세 조회 (관리자용)
+    getTransaction: (transactionId) =>
+        apiRequest(`/transactions/${transactionId}`),
 };
 
 export { transactionApi };

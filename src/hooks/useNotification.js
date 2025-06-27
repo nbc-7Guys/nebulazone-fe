@@ -1,7 +1,7 @@
 import { useState, useCallback, useEffect } from 'react';
 import { useWebSocket } from './useWebSocket';
 import { JwtManager } from '../services/managers/JwtManager';
-import { notificationApi } from '../services/api/notifications';
+import { notificationApi } from '../services/api';
 
 export const useNotification = () => {
     const [notifications, setNotifications] = useState([]);

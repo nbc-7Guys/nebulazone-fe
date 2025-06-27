@@ -1,5 +1,5 @@
 import { useState, useCallback, useEffect } from 'react';
-import { postApi } from '../services/api/posts';
+import { postApi } from '../services/api';
 import { getMyUserIdFromJwt } from '../utils/auth/auth';
 
 export const usePost = (postId) => {

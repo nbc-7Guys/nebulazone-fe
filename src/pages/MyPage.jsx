@@ -3,7 +3,7 @@ import {useNavigate} from "react-router-dom";
 import HeaderNav from "../components/layout/HeaderNav";
 import LoadingSpinner from "../components/ui/LoadingSpinner";
 import ErrorMessage from "../components/common/ErrorMessage";
-import {userApi} from "../services/api/index.js";
+import {userApi} from "../services/api";
 import {JwtManager} from "../services/managers/index.js";
 import {ErrorHandler, ToastManager} from "../utils/error/errorHandler";
 import {AccountSettings, AddressEditor, PasswordEditor, ProfileHeader, ProfileInfoEditor} from "../components/profile";

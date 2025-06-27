@@ -1,30 +1,32 @@
-import { apiRequest } from './core';
+import { apiRequest, ErrorHandler } from './core';
 
 const chatApi = {
     // 채팅방 목록 조회
-    getChatRooms: async () => {
-        return await apiRequest('/chat/rooms');
-    },
+    getChatRooms: () =>
+        apiRequest('/chat/rooms'),
 
     // 채팅방 생성 또는 기존 채팅방 조회
     createOrGetChatRoom: async (productId) => {
-        return await apiRequest('/chat/rooms', {
-            method: 'POST',
-            data: { productId }
-        });
+        try {
+            return await apiRequest('/chat/rooms', {
+                method: 'POST',
+                data: {productId},
+            });
+        } catch (error) {
+            const errorInfo = ErrorHandler.handleApiError(error);
+            throw new Error(errorInfo.message);
+        }
     },
 
     // 채팅 기록 조회
-    getChatHistory: async (roomId) => {
-        return await apiRequest(`/chat/rooms/history/${roomId}`);
-    },
+    getChatHistory: (roomId) =>
+        apiRequest(`/chat/rooms/history/${roomId}`),
 
     // 채팅방 나가기
-    leaveChatRoom: async (roomId) => {
-        return await apiRequest(`/chat/rooms/${roomId}`, {
-            method: 'DELETE'
-        });
-    }
+    leaveChatRoom: (roomId) =>
+        apiRequest(`/chat/rooms/${roomId}`, {
+            method: 'DELETE',
+        }),
 };
 
 export { chatApi };

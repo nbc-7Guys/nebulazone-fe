@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import HeaderNav from '../components/layout/HeaderNav';
 import { JwtManager } from '../services/managers/JwtManager';
-import { auctionApi, catalogApi } from '../services/api/index';
+import { auctionApi, catalogApi } from '../services/api';
 import './LandingPage.css';
 
 const LandingPage = () => {

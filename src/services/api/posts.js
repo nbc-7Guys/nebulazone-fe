@@ -1,79 +1,99 @@
-import { apiRequest, publicApiRequest } from './core';
+import { apiRequest, publicApiRequest, ErrorHandler, axiosInstance } from './core';
 
 const postApi = {
-    // 게시글 생성
-    createPost: async (postData, images = []) => {
+    // 게시글 작성 (인증 필요)
+    createPost: async (postData, images) => {
         const formData = new FormData();
-        
-        // 게시글 데이터를 JSON 문자열로 변환하여 추가
-        formData.append('postData', JSON.stringify(postData));
-        
-        // 이미지 파일들 추가
-        images.forEach((image, index) => {
-            formData.append('images', image);
-        });
 
-        return await apiRequest('/posts', {
-            method: 'POST',
-            data: formData,
-            headers: {
-                'Content-Type': 'multipart/form-data'
-            }
+        // JSON 파트에 Content-Type 명시적으로 설정
+        const postBlob = new Blob([JSON.stringify(postData)], {
+            type: 'application/json'
         });
+        formData.append('post', postBlob);
+
+        // 이미지 파일들 추가
+        if (images && images.length > 0) {
+            images.forEach(image => {
+                formData.append('images', image);
+            });
+        }
+
+        try {
+            const response = await axiosInstance.post('/posts', formData, {
+                headers: {
+                    'Content-Type': 'multipart/form-data',
+                },
+            });
+            return response.data;
+        } catch (error) {
+            const errorInfo = ErrorHandler.handleApiError(error);
+            throw new Error(errorInfo.message);
+        }
     },
 
-    // 게시글 수정
-    updatePost: async (postId, postData, images = []) => {
+    // 게시글 수정 (인증 필요)
+    updatePost: async (postId, postData, images) => {
         const formData = new FormData();
-        
-        // 게시글 데이터를 JSON 문자열로 변환하여 추가
-        formData.append('postData', JSON.stringify(postData));
-        
-        // 이미지 파일들 추가
-        images.forEach((image, index) => {
-            formData.append('images', image);
-        });
 
-        return await apiRequest(`/posts/${postId}`, {
-            method: 'PUT',
-            data: formData,
-            headers: {
-                'Content-Type': 'multipart/form-data'
-            }
+        // JSON 파트에 Content-Type 명시적으로 설정
+        const postBlob = new Blob([JSON.stringify(postData)], {
+            type: 'application/json'
         });
+        formData.append('post', postBlob);
+
+        // 이미지 파일들 추가
+        if (images && images.length > 0) {
+            images.forEach(image => {
+                formData.append('images', image);
+            });
+        }
+
+        try {
+            const response = await axiosInstance.put(`/posts/${postId}`, formData, {
+                headers: {
+                    'Content-Type': 'multipart/form-data',
+                },
+            });
+            return response.data;
+        } catch (error) {
+            const errorInfo = ErrorHandler.handleApiError(error);
+            throw new Error(errorInfo.message);
+        }
     },
 
-    // 게시글 삭제
+    // 게시글 삭제 (인증 필요)
     deletePost: async (postId) => {
-        return await apiRequest(`/posts/${postId}`, {
-            method: 'DELETE'
-        });
+        try {
+            return await apiRequest(`/posts/${postId}`, {
+                method: 'DELETE',
+            }, true); // 인증 필요
+        } catch (error) {
+            const errorInfo = ErrorHandler.handleApiError(error);
+            throw new Error(errorInfo.message);
+        }
     },
 
-    // 게시글 검색 (인증 선택적)
-    searchPosts: async (params = {}, requireAuth = false) => {
+    // 게시글 목록 검색 (인증 여부를 매개변수로 받음)
+    searchPosts: (params = {}, requireAuth = true) => {
         const queryParams = new URLSearchParams();
-        
+
+        // 검색 키워드
         if (params.keyword) queryParams.append('keyword', params.keyword);
-        if (params.page !== undefined) queryParams.append('page', params.page);
-        if (params.size !== undefined) queryParams.append('size', params.size);
-        if (params.sort) queryParams.append('sort', params.sort);
+
+        // 게시글 타입 (필수)
         if (params.type) queryParams.append('type', params.type);
 
-        const queryString = queryParams.toString();
-        const endpoint = queryString ? `/posts/search?${queryString}` : '/posts/search';
-        
-        return requireAuth 
-            ? await apiRequest(endpoint)
-            : await publicApiRequest(endpoint, {}, false);
+        // 페이지네이션
+        if (params.page) queryParams.append('page', params.page);
+        if (params.size) queryParams.append('size', params.size);
+
+        const query = queryParams.toString();
+        return apiRequest(`/posts${query ? `?${query}` : ''}`, {}, requireAuth);
     },
 
-    // 게시글 상세 조회 (인증 선택적)
-    getPost: async (postId, requireAuth = false) => {
-        return requireAuth 
-            ? await apiRequest(`/posts/${postId}`)
-            : await publicApiRequest(`/posts/${postId}`, {}, false);
-    }
+    // 게시글 상세 조회 (인증 여부를 매개변수로 받음)
+    getPost: (postId, requireAuth = true) =>
+        apiRequest(`/posts/${postId}`, {}, requireAuth),
 };
 
 export { postApi };

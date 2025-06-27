@@ -1,24 +1,21 @@
 import { apiRequest } from './core';
 
 const notificationApi = {
-    // 읽지 않은 알림 조회
-    getUnreadNotifications: async () => {
-        return await apiRequest('/notifications/unread');
-    },
+    // 읽지 않은 알림 목록 조회
+    getUnreadNotifications: () =>
+        apiRequest('/notifications'),
 
     // 알림 읽음 처리
-    markAsRead: async (notificationId) => {
-        return await apiRequest(`/notifications/${notificationId}/read`, {
-            method: 'POST'
-        });
-    },
+    markAsRead: (notificationId) =>
+        apiRequest(`/notification/${notificationId}/read`, {
+            method: 'PATCH'
+        }),
 
     // 모든 알림 읽음 처리
-    markAllAsRead: async () => {
-        return await apiRequest('/notifications/read-all', {
-            method: 'POST'
-        });
-    }
+    markAllAsRead: () =>
+        apiRequest('/notification/read-all', {
+            method: 'PATCH'
+        }),
 };
 
 export { notificationApi };

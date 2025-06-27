@@ -9,7 +9,7 @@ import CatalogCard from '../components/catalog/CatalogCard';
 import SkeletonCard from '../components/ui/SkeletonCard';
 import Breadcrumb from '../components/ui/Breadcrumb';
 import useKeyboardShortcuts from '../hooks/useKeyboardShortcuts';
-import { catalogApi } from '../services/api/index';
+import { catalogApi } from '../services/api';
 
 export default function CatalogListPage() {
     const [searchParams, setSearchParams] = useSearchParams();

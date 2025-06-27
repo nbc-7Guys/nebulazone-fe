@@ -5,7 +5,7 @@ import LoadingSpinner from '../components/ui/LoadingSpinner';
 import ErrorMessage from '../components/common/ErrorMessage';
 import { CatalogInfo, ReviewList } from '../components/catalog';
 import Breadcrumb from '../components/ui/Breadcrumb';
-import { catalogApi, reviewApi } from '../services/api/index';
+import { catalogApi, reviewApi } from '../services/api';
 
 export default function CatalogDetailPage() {
     const { catalogId } = useParams();

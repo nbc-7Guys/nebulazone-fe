@@ -1,18 +1,22 @@
-import { apiRequest } from './core';
+import { apiRequest, ErrorHandler } from './core';
 
 const pointApi = {
     // 포인트 내역 조회
-    getPointHistory: async (page = 0, size = 10) => {
-        return await apiRequest(`/point/history?page=${page}&size=${size}`);
-    },
+    getPointHistory: (page = 1, size = 10) =>
+        apiRequest(`/point-history?page=${page}&size=${size}`),
 
     // 포인트 충전
     chargePoint: async (pointData) => {
-        return await apiRequest('/point/charge', {
-            method: 'POST',
-            data: pointData
-        });
-    }
+        try {
+            return await apiRequest('/point-history/charge', {
+                method: 'POST',
+                data: pointData,
+            });
+        } catch (error) {
+            const errorInfo = ErrorHandler.handleApiError(error);
+            throw new Error(errorInfo.message);
+        }
+    },
 };
 
 export { pointApi };

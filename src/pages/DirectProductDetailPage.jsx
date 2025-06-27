@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { useParams, useNavigate, useLocation } from "react-router-dom";
 import axios from "axios";
-import {productApi} from "../services/api.js";
+import {productApi} from "../services/api";
 import HeaderNav from "../components/layout/HeaderNav";
 import { JwtManager } from "../services/managers/JwtManager";
 import { ENV } from "../utils/env";

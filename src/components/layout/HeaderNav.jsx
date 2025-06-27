@@ -3,7 +3,7 @@ import NotificationDisplay from "../common/NotificationDisplay";
 import {useLocation, useNavigate} from "react-router-dom";
 import {JwtManager} from "../../services/managers/JwtManager";
 import {getMyEmailFromJwt, getMyUserIdFromJwt} from "../../utils/auth/auth";
-import {authApi} from "../../services/api.js";
+import {authApi} from "../../services/api";
 
 export default function HeaderNav() {
     const navigate = useNavigate();
