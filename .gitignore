@@ -21,7 +21,6 @@ dist-ssr
 
 # Vercel
 .vercel
-vercel.json
 package-lock.json
 
 
