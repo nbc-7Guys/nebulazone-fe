@@ -22,6 +22,7 @@ export default function ChatRoomPage() {
     const [errorMsg, setErrorMsg] = useState("");
     const [purchasing, setPurchasing] = useState(false);
     const [connectionStatus, setConnectionStatus] = useState(false);
+    const [leaving, setLeaving] = useState(false);
 
     // WebSocket 훅 사용
     const { isConnected } = useWebSocket();
@@ -164,6 +165,29 @@ export default function ChatRoomPage() {
         }
     };
 
+    // 채팅방 나가기
+    const handleLeaveChatRoom = async () => {
+        const confirmLeave = window.confirm("정말로 채팅방을 나가시겠습니까?\n채팅방을 나가면 더 이상 메시지를 받을 수 없습니다.");
+        if (!confirmLeave) return;
+
+        setLeaving(true);
+        try {
+            // WebSocket 구독 해제
+            unsubscribeFromChatRoom();
+            
+            // 서버에 채팅방 나가기 요청
+            await chatApi.leaveChatRoom(roomId);
+            
+            ToastManager.success("채팅방을 나갔습니다.");
+            navigate("/chat/rooms", { replace: true });
+        } catch (error) {
+            const errorInfo = ErrorHandler.handleApiError(error);
+            ToastManager.error(error.message || errorInfo.message || "채팅방 나가기에 실패했습니다.");
+        } finally {
+            setLeaving(false);
+        }
+    };
+
     if (!product) {
         return (
             <div style={{ background: "#f8fafc", minHeight: "100vh" }}>
@@ -242,7 +266,38 @@ export default function ChatRoomPage() {
                 boxShadow: "0 4px 24px #0001"
             }}>
                 <div style={{ display: "flex", alignItems: "center", borderBottom: "1px solid #eee", paddingBottom: 18, marginBottom: 22 }}>
-                    <img src={product.image} alt="" style={{ width: 72, height: 72, borderRadius: 12, marginRight: 18, objectFit: "cover" }} />
+                    {product.image ? (
+                        <img 
+                            src={product.image} 
+                            alt={product.name} 
+                            style={{ 
+                                width: 72, 
+                                height: 72, 
+                                borderRadius: 12, 
+                                marginRight: 18, 
+                                objectFit: "cover",
+                                border: "1px solid #e2e8f0"
+                            }} 
+                        />
+                    ) : (
+                        <div 
+                            style={{
+                                width: 72,
+                                height: 72,
+                                borderRadius: 12,
+                                backgroundColor: "#f7fafc",
+                                display: "flex",
+                                alignItems: "center",
+                                justifyContent: "center",
+                                marginRight: 18,
+                                border: "1px solid #e2e8f0",
+                                fontSize: 12,
+                                color: "#a0aec0"
+                            }}
+                        >
+                            이미지<br/>없음
+                        </div>
+                    )}
                     <div style={{ flex: 1 }}>
                         <div style={{ 
                             fontWeight: 600, 
@@ -299,7 +354,7 @@ export default function ChatRoomPage() {
                         {purchasing ? "구매중..." : product.isSold ? "판매완료" : "구매하기"}
                     </button>
                 </div>
-                <div style={{ minHeight: 300, overflowX: "hidden" }}>
+                <div style={{ overflowX: "hidden" }}>
                     {loading || isLoadingHistory
                         ? <div style={{ textAlign: "center", padding: "40px", color: "#666" }}>
                             <div>채팅 기록을 불러오는 중...</div>
@@ -358,22 +413,58 @@ export default function ChatRoomPage() {
                         {connectionStatus ? "서버와 연결됨" : "서버 연결 안됨"}
                     </div>
                 </div>
-                <button
-                    style={{
-                        marginTop: 24,
-                        background: "#eee",
-                        color: "#333",
-                        padding: "11px 22px",
-                        borderRadius: 8,
-                        fontWeight: 500,
-                        fontSize: 17,
-                        border: "none",
-                        cursor: "pointer"
-                    }}
-                    onClick={() => navigate(-1)}
-                >
-                    나가기
-                </button>
+                <div style={{ marginTop: 24, display: "flex", gap: "12px" }}>
+                    <button
+                        style={{
+                            background: "#e53e3e",
+                            color: "#fff",
+                            padding: "11px 22px",
+                            borderRadius: 8,
+                            fontWeight: 500,
+                            fontSize: 16,
+                            border: "none",
+                            cursor: leaving ? "not-allowed" : "pointer",
+                            opacity: leaving ? 0.6 : 1,
+                            transition: "all 0.2s ease"
+                        }}
+                        onClick={handleLeaveChatRoom}
+                        disabled={leaving}
+                        onMouseEnter={(e) => {
+                            if (!leaving) {
+                                e.target.style.backgroundColor = "#c53030";
+                            }
+                        }}
+                        onMouseLeave={(e) => {
+                            if (!leaving) {
+                                e.target.style.backgroundColor = "#e53e3e";
+                            }
+                        }}
+                    >
+                        {leaving ? "나가는 중..." : "채팅방 나가기"}
+                    </button>
+                    <button
+                        style={{
+                            background: "#eee",
+                            color: "#333",
+                            padding: "11px 22px",
+                            borderRadius: 8,
+                            fontWeight: 500,
+                            fontSize: 16,
+                            border: "none",
+                            cursor: "pointer",
+                            transition: "all 0.2s ease"
+                        }}
+                        onClick={() => navigate(-1)}
+                        onMouseEnter={(e) => {
+                            e.target.style.backgroundColor = "#e2e8f0";
+                        }}
+                        onMouseLeave={(e) => {
+                            e.target.style.backgroundColor = "#eee";
+                        }}
+                    >
+                        뒤로가기
+                    </button>
+                </div>
             </div>
         </div>
     );

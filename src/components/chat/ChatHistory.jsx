@@ -1,9 +1,28 @@
-import React, {useEffect, useRef} from "react";
+import React, {useEffect, useRef, useState} from "react";
 import { getMyUserIdFromJwt } from "../../utils/auth/auth";
 
 export default function ChatHistory({ chatHistory }) {
     const myUserId = getMyUserIdFromJwt();
     const chatEndRef = useRef(null);
+    const [chatHeight, setChatHeight] = useState(400);
+
+    // 창 크기에 따른 채팅창 높이 계산
+    useEffect(() => {
+        const calculateChatHeight = () => {
+            const windowHeight = window.innerHeight;
+            // 헤더, 상품 정보, 입력창, 기타 여백을 제외한 높이 계산
+            const availableHeight = windowHeight - 400; // 대략적인 고정 요소들의 높이
+            const minHeight = 300;
+            const maxHeight = 600;
+            
+            setChatHeight(Math.max(minHeight, Math.min(maxHeight, availableHeight)));
+        };
+
+        calculateChatHeight();
+        window.addEventListener('resize', calculateChatHeight);
+        
+        return () => window.removeEventListener('resize', calculateChatHeight);
+    }, []);
 
     // 채팅 기록이 바뀔 때마다 아래로 스크롤
     useEffect(() => {
@@ -17,7 +36,8 @@ export default function ChatHistory({ chatHistory }) {
 
     return (
         <div style={{ 
-            maxHeight: 340, 
+            height: chatHeight,
+            maxHeight: chatHeight, 
             overflowY: "auto", 
             overflowX: "hidden",
             padding: "8px 0",

@@ -42,7 +42,6 @@ export default function ProductCreatePage() {
 
     // 이미지 업로드
     const [images, setImages] = useState([]);
-    const [imagePreviews, setImagePreviews] = useState([]);
 
     // 로그인 확인
     useEffect(() => {
@@ -184,19 +183,57 @@ export default function ProductCreatePage() {
                 ...(endTime && { endTime })
             };
 
+            // 1단계: 상품 등록 (multipart, 이미지 제외)
             const response = await productApi.createProduct(
                 selectedCatalog.catalogId,
-                productData,
-                images
+                productData
             );
+
+            // 2단계: 이미지가 있으면 별도 업로드
+            if (images && images.length > 0) {
+                console.log('이미지 업로드 시작:', {
+                    catalogId: selectedCatalog.catalogId,
+                    productId: response.productId,
+                    imageCount: images.length
+                });
+                try {
+                    const imageResponse = await productApi.updateProductImages(
+                        selectedCatalog.catalogId,
+                        response.productId,
+                        images
+                    );
+                    console.log('이미지 업로드 성공:', imageResponse);
+                } catch (imageError) {
+                    console.error('이미지 업로드 실패:', imageError);
+                    console.error('이미지 업로드 실패 상세:', {
+                        catalogId: selectedCatalog.catalogId,
+                        productId: response.productId,
+                        error: imageError.message,
+                        stack: imageError.stack
+                    });
+                    // 상품은 등록되었지만 이미지 업로드 실패 시 알림
+                    setError(`상품은 성공적으로 등록되었습니다! 하지만 이미지 업로드에 실패했습니다. 상품 수정에서 이미지를 다시 업로드해주세요.`);
+                    
+                    // 이미지 업로드가 실패해도 상품 등록은 성공했으므로 페이지 이동
+                    setTimeout(() => {
+                        if (formData.type === 'DIRECT') {
+                            navigate(`/products/direct/${response.productId}?catalogId=${selectedCatalog.catalogId}`);
+                        } else {
+                            navigate(`/products/auction/${response.productId}`);
+                        }
+                    }, 3000);  // 3초 후 자동 이동
+                }
+            } else {
+                console.log('업로드할 이미지가 없습니다:', { images });
+            }
 
             console.log('상품 등록 성공:', response);
             
             // 성공 시 해당 상품 상세 페이지로 이동
             if (formData.type === 'DIRECT') {
-                navigate(`/products/direct/${response.productId}`);
+                navigate(`/products/direct/${response.productId}?catalogId=${selectedCatalog.catalogId}`);
             } else {
-                navigate(`/products/auction/${response.auctionId}`);
+                navigate(`/products/auction/${response.productId}`);
             }
 
         } catch (error) {
@@ -276,8 +313,6 @@ export default function ProductCreatePage() {
                             handleFormChange={handleFormChange}
                             images={images}
                             setImages={setImages}
-                            imagePreviews={imagePreviews}
-                            setImagePreviews={setImagePreviews}
                             onSubmit={handleSubmit}
                             loading={loading}
                             onBack={handleFormBack}

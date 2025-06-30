@@ -7,8 +7,6 @@ const ProductForm = ({
     handleFormChange,
     images,
     setImages,
-    imagePreviews,
-    setImagePreviews,
     onSubmit,
     loading,
     onBack
@@ -231,10 +229,7 @@ const ProductForm = ({
                     상품 이미지 (최대 5개)
                 </label>
                 <ImageUploader
-                    images={images}
-                    setImages={setImages}
-                    imagePreviews={imagePreviews}
-                    setImagePreviews={setImagePreviews}
+                    onImagesChange={setImages}
                     maxImages={5}
                 />
             </div>

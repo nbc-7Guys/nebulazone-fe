@@ -103,14 +103,17 @@ export default function DirectProductDetailPage() {
                 catalogId: data.catalogId,
                 name: data.productName,
                 price: data.productPrice,
-                image: product.image,
+                image: product.image || product.productImageUrl,  // 이미지 필드명 호환성
                 category: product.category,
                 description: product.description,
+                isSold: product.isSold,
                 seller: {
                     id: data.sellerId,
                     name: data.sellerName
                 }
             };
+            
+            console.log('직거래 상품에서 채팅방으로 전달하는 product:', completeProduct);
             
             navigate(`/chat/${data.chatRoomId}`, { 
                 state: { 

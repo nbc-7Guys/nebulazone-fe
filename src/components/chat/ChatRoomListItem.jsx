@@ -14,6 +14,7 @@ export default function ChatRoomListItem({ room }) {
             catalogId: room.catalogId,
             name: room.productName,
             price: room.productPrice,
+            image: room.imageUrl,
             isSold: room.isSold,
             seller: {
                 id: room.sellerId,
@@ -42,6 +43,40 @@ export default function ChatRoomListItem({ room }) {
             }}
             onClick={handleClick}
         >
+            {/* 상품 이미지 */}
+            {room.imageUrl ? (
+                <img 
+                    src={room.imageUrl} 
+                    alt={room.productName}
+                    style={{
+                        width: 60,
+                        height: 60,
+                        borderRadius: 8,
+                        objectFit: "cover",
+                        marginRight: 16,
+                        border: "1px solid #e2e8f0"
+                    }}
+                />
+            ) : (
+                <div 
+                    style={{
+                        width: 60,
+                        height: 60,
+                        borderRadius: 8,
+                        backgroundColor: "#f7fafc",
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                        marginRight: 16,
+                        border: "1px solid #e2e8f0",
+                        fontSize: 12,
+                        color: "#a0aec0"
+                    }}
+                >
+                    이미지<br/>없음
+                </div>
+            )}
+            
             <div style={{ flex: 2 }}>
                 <div style={{ 
                     fontWeight: 600, 
