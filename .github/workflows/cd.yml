@@ -20,21 +20,6 @@ jobs:
       - name: Create .env.production file
         run: echo "${{ secrets.ENV_PRODUCTION }}" > .env.production
 
-      - name: Generate vercel.json with API_HOST
-        run: |
-          echo '{
-            "rewrites": [
-              {
-                "source": "/api/(.*)",
-                "destination": "https://${{ secrets.API_HOST }}/$1"
-              },
-              {
-                "source": "/(.*)",
-                "destination": "/index.html"
-              }
-            ]
-          }' > vercel.json
-
       - name: Deploy to Vercel
         uses: amondnet/vercel-action@v25
         with:
