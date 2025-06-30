@@ -33,7 +33,7 @@ const chatApi = {
         try {
             const formData = new FormData();
             formData.append('image', imageFile);
-            formData.append('meta', type);
+            formData.append('type', type);
 
             return await apiRequest(`/send/image/${roomId}`, {
                 method: 'POST',
