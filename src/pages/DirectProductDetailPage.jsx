@@ -3,6 +3,7 @@ import { useParams, useNavigate, useLocation } from "react-router-dom";
 import axios from "axios";
 import {productApi} from "../services/api";
 import HeaderNav from "../components/layout/HeaderNav";
+import LoadingSpinner from "../components/ui/LoadingSpinner";
 import { JwtManager } from "../services/managers/JwtManager";
 import { ENV } from "../utils/env";
 
@@ -13,7 +14,7 @@ export default function DirectProductDetailPage() {
     const productType = location.pathname.includes('/auction/') ? 'AUCTION' : 'DIRECT';
 
     const [product, setProduct] = useState(null);
-    const [loading, setLoading] = useState(false);
+    const [loading, setLoading] = useState(true);
     const [errorMsg, setErrorMsg] = useState("");
 
 // URL에서 catalogId 파라미터 추출
@@ -40,11 +41,38 @@ export default function DirectProductDetailPage() {
     }, [catalogId, id]);
 
 
+    if (loading) {
+        return (
+            <div style={{ background: "#f8fafc", minHeight: "100vh" }}>
+                <HeaderNav />
+                <div style={{
+                    maxWidth: 700,
+                    margin: "40px auto",
+                    background: "#fff",
+                    borderRadius: 14,
+                    padding: 42,
+                    boxShadow: "0 4px 24px #0001",
+                    textAlign: "center"
+                }}>
+                    <LoadingSpinner size="large" message="상품 정보를 불러오는 중..." />
+                </div>
+            </div>
+        );
+    }
+
     if (!product) {
         return (
-            <div style={{ padding: 40 }}>
+            <div style={{ background: "#f8fafc", minHeight: "100vh" }}>
                 <HeaderNav />
-                <div style={{ maxWidth: 700, margin: "40px auto", textAlign: "center" }}>
+                <div style={{
+                    maxWidth: 700,
+                    margin: "40px auto",
+                    background: "#fff",
+                    borderRadius: 14,
+                    padding: 42,
+                    boxShadow: "0 4px 24px #0001",
+                    textAlign: "center"
+                }}>
                     <h2>상품을 찾을 수 없습니다.</h2>
                     <button onClick={() => navigate("/")} style={{ marginTop: 18, padding: "10px 24px", borderRadius: 8, background: "#38d39f", color: "#fff", fontWeight: 500, fontSize: 16, border: "none" }}>메인으로</button>
                 </div>

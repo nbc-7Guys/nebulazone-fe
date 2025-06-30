@@ -2,13 +2,14 @@ import React, { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { auctionApi } from "../services/api";
 import HeaderNav from "../components/layout/HeaderNav";
+import LoadingSpinner from "../components/ui/LoadingSpinner";
 
 export default function AuctionProductDetailPage() {
     const { id } = useParams(); // auctionId
     const navigate = useNavigate();
 
     const [auction, setAuction] = useState(null);
-    const [loading, setLoading] = useState(false);
+    const [loading, setLoading] = useState(true);
     const [errorMsg, setErrorMsg] = useState("");
 
     useEffect(() => {
@@ -31,11 +32,38 @@ export default function AuctionProductDetailPage() {
         fetchAuction();
     }, [id]);
 
+    if (loading) {
+        return (
+            <div style={{ background: "#f8fafc", minHeight: "100vh" }}>
+                <HeaderNav />
+                <div style={{
+                    maxWidth: 700,
+                    margin: "40px auto",
+                    background: "#fff",
+                    borderRadius: 14,
+                    padding: 42,
+                    boxShadow: "0 4px 24px #0001",
+                    textAlign: "center"
+                }}>
+                    <LoadingSpinner size="large" message="경매 정보를 불러오는 중..." />
+                </div>
+            </div>
+        );
+    }
+
     if (!auction) {
         return (
-            <div style={{ padding: 40 }}>
+            <div style={{ background: "#f8fafc", minHeight: "100vh" }}>
                 <HeaderNav />
-                <div style={{ maxWidth: 700, margin: "40px auto", textAlign: "center" }}>
+                <div style={{
+                    maxWidth: 700,
+                    margin: "40px auto",
+                    background: "#fff",
+                    borderRadius: 14,
+                    padding: 42,
+                    boxShadow: "0 4px 24px #0001",
+                    textAlign: "center"
+                }}>
                     <h2>경매 상품을 찾을 수 없습니다.</h2>
                     <button
                         onClick={() => navigate("/")}

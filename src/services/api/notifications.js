@@ -3,7 +3,7 @@ import { apiRequest } from './core';
 const notificationApi = {
     // 읽지 않은 알림 목록 조회
     getUnreadNotifications: () =>
-        apiRequest('/notifications'),
+        apiRequest('/notification'),
 
     // 알림 읽음 처리
     markAsRead: (notificationId) =>

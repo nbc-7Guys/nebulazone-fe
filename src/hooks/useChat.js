@@ -203,6 +203,22 @@ export const useChat = (roomId) => {
         setMessages([]);
     }, []);
 
+    // 이미지 메시지 전송
+    const sendImageMessage = useCallback(async (imageFile) => {
+        if (!roomId || !imageFile) {
+            console.log('[useChat] Invalid room ID or image file');
+            return;
+        }
+
+        try {
+            await chatApi.sendImageMessage(roomId, imageFile, 'IMAGE');
+            console.log('[useChat] Image message sent successfully');
+        } catch (error) {
+            console.error('[useChat] Failed to send image message:', error);
+            throw error;
+        }
+    }, [roomId]);
+
     // 연결 상태 확인
     const isChatConnected = useCallback(() => {
         const wsConnected = isConnected();
@@ -227,6 +243,7 @@ export const useChat = (roomId) => {
         subscribeToChatRoom,
         unsubscribeFromChatRoom,
         sendChatMessage,
+        sendImageMessage,
         sendTypingStatus,
         clearMessages,
         loadChatHistory,

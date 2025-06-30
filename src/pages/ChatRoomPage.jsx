@@ -31,6 +31,7 @@ export default function ChatRoomPage() {
         subscribeToChatRoom,
         unsubscribeFromChatRoom,
         sendChatMessage,
+        sendImageMessage,
         isChatConnected
     } = useChat(parseInt(roomId));
 
@@ -334,7 +335,11 @@ export default function ChatRoomPage() {
                             : <ChatHistory chatHistory={chatHistory} />}
                 </div>
                 <div style={{ marginTop: 18 }}>
-                    <ChatInput onSend={handleSendMessage} disabled={!connectionStatus || !!errorMsg} />
+                    <ChatInput 
+                        onSend={handleSendMessage} 
+                        onSendImage={sendImageMessage}
+                        disabled={!connectionStatus || !!errorMsg} 
+                    />
                     <div style={{ 
                         color: connectionStatus ? "#38d39f" : "#e53e3e", 
                         fontSize: 15, 

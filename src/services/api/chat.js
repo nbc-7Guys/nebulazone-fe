@@ -27,6 +27,26 @@ const chatApi = {
         apiRequest(`/chat/rooms/${roomId}`, {
             method: 'DELETE',
         }),
+
+    // 이미지 메시지 전송
+    sendImageMessage: async (roomId, imageFile, type = 'IMAGE') => {
+        try {
+            const formData = new FormData();
+            formData.append('image', imageFile);
+            formData.append('meta', type);
+
+            return await apiRequest(`/send/image/${roomId}`, {
+                method: 'POST',
+                data: formData,
+                headers: {
+                    'Content-Type': 'multipart/form-data',
+                },
+            });
+        } catch (error) {
+            const errorInfo = ErrorHandler.handleApiError(error);
+            throw new Error(errorInfo.message);
+        }
+    },
 };
 
 export { chatApi };

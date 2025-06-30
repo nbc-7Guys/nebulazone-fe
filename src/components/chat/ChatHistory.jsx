@@ -26,6 +26,11 @@ export default function ChatHistory({ chatHistory }) {
             {chatHistory.map((msg, i) => {
                 // msg.userId(혹은 senderId, 실제 백엔드 응답에 맞게)
                 const isMe = String(msg.senderId) === String(myUserId);
+                
+                // 메시지 타입 확인 (여러 필드명 지원)
+                const messageType = msg.messageType || msg.type;
+                const isImageMessage = messageType === 'IMAGE';
+                
                 return (
                     <div
                         key={i}
@@ -41,9 +46,9 @@ export default function ChatHistory({ chatHistory }) {
                                 background: isMe ? "#38d39f" : "#fff",
                                 color: isMe ? "#fff" : "#222",
                                 borderRadius: 13,
-                                padding: "9px 14px",
+                                padding: isImageMessage ? "4px" : "9px 14px",
                                 minWidth: 44,
-                                maxWidth: 260,
+                                maxWidth: isImageMessage ? 280 : 260,
                                 boxShadow: "0 1px 4px #0001",
                                 fontSize: 15,
                                 textAlign: "left",
@@ -53,7 +58,25 @@ export default function ChatHistory({ chatHistory }) {
                                 hyphens: "auto"
                             }}
                         >
-                            {msg.message}
+                            {isImageMessage ? (
+                                <img 
+                                    src={msg.message} 
+                                    alt="채팅 이미지" 
+                                    style={{
+                                        width: "100%",
+                                        maxWidth: "250px",
+                                        height: "auto",
+                                        borderRadius: "8px",
+                                        cursor: "pointer"
+                                    }}
+                                    onClick={() => {
+                                        const newWindow = window.open();
+                                        newWindow.document.write(`<img src="${msg.message}" style="max-width:100%;height:auto;" />`);
+                                    }}
+                                />
+                            ) : (
+                                msg.message
+                            )}
                         </div>
                         <div style={{
                             fontSize: 12, color: "#aaa", marginBottom: 2, minWidth: 65,
