@@ -17,13 +17,12 @@ export default function OAuthRedirectPage() {
         // 2. URL에서 토큰 추출
         const params = new URLSearchParams(window.location.search);
         const accessToken = params.get("access_token");
-        const refreshToken = params.get("refresh_token");
 
-        console.log("Extracted tokens:", { accessToken, refreshToken });
+        console.log("Extracted tokens:", { accessToken });
 
-        if (accessToken && refreshToken) {
+        if (accessToken) {
             // 3. 토큰 저장
-            JwtManager.setJwt(accessToken, refreshToken);
+            JwtManager.setJwt(accessToken);
             console.log("Tokens stored. Navigating home...");
 
             // 소셜 로그인 성공 토스트 표시

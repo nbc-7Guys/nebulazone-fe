@@ -37,14 +37,11 @@ export const JwtManager = {
     },
 
     // 토큰 저장
-    setJwt: (accessToken, refreshToken) => {
+    setJwt: (accessToken) => {
         localStorage.setItem(ACCESS_TOKEN_KEY, accessToken);
-        if (refreshToken) {
-            localStorage.setItem(REFRESH_TOKEN_KEY, refreshToken);
-        }
-        
+
         // 로그인 이벤트 발생
-        JwtManager._emitEvent('login', { accessToken, refreshToken });
+        JwtManager._emitEvent('login', { accessToken });
     },
 
     // 사용자 정보 저장
