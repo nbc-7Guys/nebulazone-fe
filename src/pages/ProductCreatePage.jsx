@@ -4,6 +4,7 @@ import HeaderNav from "../components/layout/HeaderNav";
 import ErrorMessage from "../components/common/ErrorMessage";
 import { catalogApi, productApi } from "../services/api";
 import { JwtManager } from "../services/managers/JwtManager";
+import { ToastManager } from "../utils/error/errorHandler";
 import {
     StepIndicator,
     PageHeader,
@@ -211,8 +212,12 @@ export default function ProductCreatePage() {
                         error: imageError.message,
                         stack: imageError.stack
                     });
-                    // 상품은 등록되었지만 이미지 업로드 실패 시 알림
-                    setError(`상품은 성공적으로 등록되었습니다! 하지만 이미지 업로드에 실패했습니다. 상품 수정에서 이미지를 다시 업로드해주세요.`);
+                    // 상품은 등록되었지만 이미지 업로드 실패 시 Toast 알림
+                    const productTypeName = formData.type === 'DIRECT' ? '직거래' : '경매';
+                    ToastManager.warning(
+                        `${productTypeName} 상품은 성공적으로 등록되었지만, 이미지 업로드에 실패했습니다. 상품 수정에서 이미지를 다시 업로드해주세요.`,
+                        '상품 등록 완료 (이미지 실패)'
+                    );
                     
                     // 이미지 업로드가 실패해도 상품 등록은 성공했으므로 페이지 이동
                     setTimeout(() => {
@@ -221,7 +226,7 @@ export default function ProductCreatePage() {
                         } else {
                             navigate(`/products/auction/${response.productId}`);
                         }
-                    }, 3000);  // 3초 후 자동 이동
+                    }, 2500);  // 2.5초 후 자동 이동
                 }
             } else {
                 console.log('업로드할 이미지가 없습니다:', { images });
@@ -229,12 +234,21 @@ export default function ProductCreatePage() {
 
             console.log('상품 등록 성공:', response);
             
-            // 성공 시 해당 상품 상세 페이지로 이동
-            if (formData.type === 'DIRECT') {
-                navigate(`/products/direct/${response.productId}?catalogId=${selectedCatalog.catalogId}`);
-            } else {
-                navigate(`/products/auction/${response.productId}`);
-            }
+            // 성공 Toast 메시지 표시
+            const productTypeName = formData.type === 'DIRECT' ? '직거래' : '경매';
+            ToastManager.success(
+                `${productTypeName} 상품이 성공적으로 등록되었습니다!`,
+                '상품 등록 완료'
+            );
+            
+            // 성공 시 해당 상품 상세 페이지로 이동 (Toast 표시 후 잠시 후)
+            setTimeout(() => {
+                if (formData.type === 'DIRECT') {
+                    navigate(`/products/direct/${response.productId}?catalogId=${selectedCatalog.catalogId}`);
+                } else {
+                    navigate(`/products/auction/${response.productId}`);
+                }
+            }, 1500); // 1.5초 후 이동
 
         } catch (error) {
             console.error('상품 등록 실패:', error);

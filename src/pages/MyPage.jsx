@@ -6,7 +6,7 @@ import ErrorMessage from "../components/common/ErrorMessage";
 import {userApi} from "../services/api";
 import {JwtManager} from "../services/managers/index.js";
 import {ErrorHandler, ToastManager} from "../utils/error/errorHandler";
-import {AccountSettings, AddressEditor, PasswordEditor, ProfileHeader, ProfileInfoEditor} from "../components/profile";
+import {AccountSettings, AddressEditor, PasswordEditor, ProfileHeader, ProfileInfoEditor, PointInfo} from "../components/profile";
 
 export default function MyPage() {
     const navigate = useNavigate();
@@ -290,6 +290,8 @@ export default function MyPage() {
                     user={user}
                     onUserUpdate={loadUserProfile}
                 />
+
+                <PointInfo user={user} />
 
                 <ProfileInfoEditor
                     user={user}

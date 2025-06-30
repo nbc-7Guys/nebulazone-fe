@@ -20,7 +20,8 @@ import { Analytics } from "@vercel/analytics/react";
 import { JwtManager } from "./services/managers/JwtManager";
 import { useWebSocket } from "./hooks/useWebSocket";
 import { NotificationProvider, useNotificationContext } from "./contexts/NotificationContext";
-import { ToastProvider } from "./contexts/ToastContext";
+import { ToastProvider, useToastContext } from "./contexts/ToastContext";
+import { ToastManager } from "./utils/error/errorHandler";
 import ToastDemo from "./components/ui/ToastDemo";
 import WebSocketStatus from "./components/common/WebSocketStatus";
 import AuctionProductDetailPage from "./pages/AuctionProductDetailPage.jsx";
@@ -28,6 +29,23 @@ import TossPaymenrSuccesspage from "./pages/TossPaymenrSuccesspage.jsx";
 import CatalogDetailPage from "./pages/CatalogDetailPage.jsx";
 import CatalogListPage from "./pages/CatalogListPage.jsx";
 import PointChargePage from "./pages/PointChargePage.jsx";
+
+// Toast Manager 초기화 컴포넌트
+function ToastManagerInitializer({ children }) {
+    const toastContext = useToastContext();
+    
+    useEffect(() => {
+        // ToastManager에 Toast 인스턴스 설정
+        ToastManager.setToastInstance({
+            success: (message, title) => toastContext.toast.success(message, { title }),
+            error: (message, title) => toastContext.toast.error(message, { title }),
+            warning: (message, title) => toastContext.toast.warning(message, { title }),
+            info: (message, title) => toastContext.toast.info(message, { title })
+        });
+    }, [toastContext]);
+    
+    return children;
+}
 
 // WebSocket 및 알림 관리 컴포넌트
 function WebSocketProvider({ children }) {
@@ -142,8 +160,9 @@ function App() {
     return (
         <BrowserRouter>
             <ToastProvider position="top-right">
-                <NotificationProvider>
-                    <WebSocketProvider>
+                <ToastManagerInitializer>
+                    <NotificationProvider>
+                        <WebSocketProvider>
                         <ErrorBoundary>
                             <Routes>
                                 <Route path="/" element={<LandingPage />} />
@@ -236,8 +255,9 @@ function App() {
                         {/* 개발 환경에서만 Toast 데모 표시 */}
                         {/*{isDevelopment && <ToastDemo />}*/}
                         {/*<WebSocketStatus />*/}
-                    </WebSocketProvider>
-                </NotificationProvider>
+                        </WebSocketProvider>
+                    </NotificationProvider>
+                </ToastManagerInitializer>
             </ToastProvider>
         </BrowserRouter>
     );

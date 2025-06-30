@@ -35,15 +35,15 @@ const Toast = ({
 
     const getToastStyles = () => {
         const baseStyles = {
-            padding: '12px 16px',
-            marginBottom: '8px',
-            borderRadius: '8px',
-            boxShadow: '0 4px 12px rgba(0, 0, 0, 0.15)',
+            padding: '16px 20px',
+            marginBottom: '12px',
+            borderRadius: '12px',
+            boxShadow: '0 6px 20px rgba(0, 0, 0, 0.15)',
             display: 'flex',
             alignItems: 'flex-start',
-            gap: '8px',
-            minWidth: '300px',
-            maxWidth: '500px',
+            gap: '12px',
+            minWidth: '360px',
+            maxWidth: '600px',
             backgroundColor: '#fff',
             border: '1px solid #e1e5e9',
             animation: 'slideInRight 0.3s ease-out',
@@ -82,22 +82,25 @@ const Toast = ({
             style={getToastStyles()}
             onClick={handleClick}
         >
-            <span style={{ fontSize: '16px', flexShrink: 0 }}>
+            <span style={{ fontSize: '20px', flexShrink: 0 }}>
                 {getToastIcon()}
             </span>
             <div style={{ flex: 1, minWidth: 0 }}>
                 {title && (
                     <div style={{ 
                         fontWeight: 'bold', 
-                        marginBottom: '4px',
-                        color: '#1f2937'
+                        marginBottom: '6px',
+                        color: '#1f2937',
+                        fontSize: '16px'
                     }}>
                         {title}
                     </div>
                 )}
                 <div style={{ 
-                    color: '#6b7280',
-                    wordBreak: 'break-word'
+                    color: '#4b5563',
+                    wordBreak: 'break-word',
+                    fontSize: '15px',
+                    lineHeight: '1.5'
                 }}>
                     {message}
                 </div>
@@ -110,11 +113,16 @@ const Toast = ({
                 style={{
                     background: 'none',
                     border: 'none',
-                    fontSize: '18px',
+                    fontSize: '22px',
                     cursor: 'pointer',
                     padding: '0',
                     color: '#9ca3af',
-                    flexShrink: 0
+                    flexShrink: 0,
+                    width: '24px',
+                    height: '24px',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center'
                 }}
             >
                 ×

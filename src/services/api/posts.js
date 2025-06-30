@@ -1,25 +1,48 @@
 import { apiRequest, publicApiRequest, ErrorHandler, axiosInstance } from './core';
 
 const postApi = {
-    // 게시글 작성 (인증 필요)
-    createPost: async (postData, images) => {
-        const formData = new FormData();
+    // 게시글 작성 (JSON만, 이미지 제외)
+    createPost: async (postData) => {
+        try {
+            const response = await apiRequest('/posts', {
+                method: 'POST',
+                data: {
+                    title: postData.title,
+                    content: postData.content,
+                    type: postData.type
+                },
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+            }, true); // 인증 필요
+            return response;
+        } catch (error) {
+            const errorInfo = ErrorHandler.handleApiError(error);
+            throw new Error(errorInfo.message);
+        }
+    },
 
-        // JSON 파트에 Content-Type 명시적으로 설정
+    // 게시글 이미지 업로드
+    uploadPostImages: async (postId, images, postData = {}) => {
+        if (!images || images.length === 0) {
+            return null;
+        }
+
+        const formData = new FormData();
+        
+        // 빈 post 데이터라도 서버에서 요구하므로 추가
         const postBlob = new Blob([JSON.stringify(postData)], {
             type: 'application/json'
         });
         formData.append('post', postBlob);
 
         // 이미지 파일들 추가
-        if (images && images.length > 0) {
-            images.forEach(image => {
-                formData.append('images', image);
-            });
-        }
+        images.forEach(image => {
+            formData.append('images', image);
+        });
 
         try {
-            const response = await axiosInstance.post('/posts', formData, {
+            const response = await axiosInstance.put(`/posts/${postId}/images`, formData, {
                 headers: {
                     'Content-Type': 'multipart/form-data',
                 },

@@ -4,6 +4,7 @@ import HeaderNav from "../components/layout/HeaderNav";
 import LoadingSpinner from "../components/ui/LoadingSpinner";
 import { postApi } from "../services/api";
 import { PostType, POST_TYPE_OPTIONS } from "../types/PostType";
+import { ToastManager } from "../utils/error/errorHandler";
 
 export default function PostCreatePage() {
     const navigate = useNavigate();
@@ -115,18 +116,46 @@ export default function PostCreatePage() {
             const postData = {
                 title: formData.title.trim(),
                 content: formData.content.trim(),
-                type: formData.type,
-                postType: formData.postType
+                type: formData.type
             };
 
-            const response = await postApi.createPost(postData, selectedImages);
+            // 1단계: 게시글 작성 (JSON만)
+            const response = await postApi.createPost(postData);
             
-            alert('게시글이 성공적으로 작성되었습니다.');
-            navigate(`/posts/${response.postId}`);
+            // 2단계: 이미지가 있으면 별도 업로드
+            if (selectedImages && selectedImages.length > 0) {
+                try {
+                    await postApi.uploadPostImages(response.postId, selectedImages, postData);
+                } catch (imageError) {
+                    console.error('이미지 업로드 실패:', imageError);
+                    // 게시글은 작성되었지만 이미지 업로드 실패 시 경고 Toast
+                    ToastManager.warning(
+                        '게시글은 성공적으로 작성되었지만, 이미지 업로드에 실패했습니다. 게시글 수정에서 이미지를 다시 업로드해주세요.',
+                        '게시글 작성 완료 (이미지 실패)'
+                    );
+                    
+                    // 이미지 업로드가 실패해도 게시글 작성은 성공했으므로 페이지 이동
+                    setTimeout(() => {
+                        navigate(`/posts/${response.postId}`);
+                    }, 2500);  // 2.5초 후 자동 이동
+                    return;
+                }
+            }
+
+            // 성공 Toast 메시지 표시
+            ToastManager.success(
+                '게시글이 성공적으로 작성되었습니다!',
+                '게시글 작성 완료'
+            );
+            
+            // 성공 시 게시글 상세 페이지로 이동 (Toast 표시 후 잠시 후)
+            setTimeout(() => {
+                navigate(`/posts/${response.postId}`);
+            }, 1500); // 1.5초 후 이동
 
         } catch (error) {
             console.error('게시글 작성 실패:', error);
-            alert(error.message || '게시글 작성에 실패했습니다.');
+            ToastManager.error(error.message || '게시글 작성에 실패했습니다.');
         } finally {
             setLoading(false);
         }

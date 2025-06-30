@@ -397,28 +397,53 @@ export class ErrorHandler {
 }
 
 /**
- * 토스트 메시지 유틸리티 (향후 확장 가능)
+ * 토스트 메시지 유틸리티
  */
 export class ToastManager {
-  static success(message) {
-    // 향후 토스트 라이브러리 연동
+  static toastInstance = null;
+
+  static setToastInstance(instance) {
+    ToastManager.toastInstance = instance;
+  }
+
+  static success(message, title = '') {
     console.log('Success:', message);
-    alert(`✅ ${message}`);
+    if (ToastManager.toastInstance) {
+      ToastManager.toastInstance.success(message, title);
+    } else {
+      // fallback to alert if toast is not available
+      alert(`✅ ${title ? title + ': ' : ''}${message}`);
+    }
   }
 
-  static error(message) {
+  static error(message, title = '') {
     console.error('Error:', message);
-    alert(`❌ ${message}`);
+    if (ToastManager.toastInstance) {
+      ToastManager.toastInstance.error(message, title);
+    } else {
+      // fallback to alert if toast is not available
+      alert(`❌ ${title ? title + ': ' : ''}${message}`);
+    }
   }
 
-  static warning(message) {
+  static warning(message, title = '') {
     console.warn('Warning:', message);
-    alert(`⚠️ ${message}`);
+    if (ToastManager.toastInstance) {
+      ToastManager.toastInstance.warning(message, title);
+    } else {
+      // fallback to alert if toast is not available
+      alert(`⚠️ ${title ? title + ': ' : ''}${message}`);
+    }
   }
 
-  static info(message) {
+  static info(message, title = '') {
     console.info('Info:', message);
-    alert(`ℹ️ ${message}`);
+    if (ToastManager.toastInstance) {
+      ToastManager.toastInstance.info(message, title);
+    } else {
+      // fallback to alert if toast is not available
+      alert(`ℹ️ ${title ? title + ': ' : ''}${message}`);
+    }
   }
 }
 

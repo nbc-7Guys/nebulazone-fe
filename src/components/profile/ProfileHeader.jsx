@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { userApi } from '../../services/api';
 import { ToastManager, ErrorHandler } from '../../utils/error/errorHandler';
 
@@ -44,18 +44,60 @@ const ProfileHeader = ({ user, onUserUpdate }) => {
     const handleImageSelect = (e) => {
         const file = e.target.files[0];
         if (file) {
-            if (file.size > 5 * 1024 * 1024) { // 5MB 제한
-                ToastManager.error('이미지 파일은 5MB 이하로 선택해주세요.');
+            // 파일 크기 제한 (2MB로 강화)
+            const maxSize = 2 * 1024 * 1024; // 2MB
+            if (file.size > maxSize) {
+                ToastManager.error('프로필 이미지는 2MB 이하로 선택해주세요.');
+                e.target.value = ''; // 파일 선택 초기화
                 return;
             }
 
-            if (!file.type.startsWith('image/')) {
-                ToastManager.error('이미지 파일만 선택 가능합니다.');
+            // 파일 형식 검증 (더 엄격하게)
+            const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp'];
+            if (!allowedTypes.includes(file.type)) {
+                ToastManager.error('JPG, PNG, WebP 형식의 이미지만 업로드 가능합니다.');
+                e.target.value = ''; // 파일 선택 초기화
                 return;
             }
 
-            setSelectedProfileImage(file);
-            setPreviewUrl(URL.createObjectURL(file));
+            // 파일명 길이 제한
+            if (file.name.length > 100) {
+                ToastManager.error('파일명이 너무 깁니다. 100자 이하로 해주세요.');
+                e.target.value = ''; // 파일 선택 초기화
+                return;
+            }
+
+            // 이미지 크기(해상도) 검증
+            const img = new Image();
+            img.onload = function() {
+                // 최대 해상도 제한 (4096x4096)
+                if (this.width > 4096 || this.height > 4096) {
+                    ToastManager.error('이미지 해상도는 4096x4096 이하로 해주세요.');
+                    e.target.value = ''; // 파일 선택 초기화
+                    URL.revokeObjectURL(this.src);
+                    return;
+                }
+
+                // 최소 해상도 제한 (100x100)
+                if (this.width < 100 || this.height < 100) {
+                    ToastManager.error('이미지 해상도는 최소 100x100 이상이어야 합니다.');
+                    e.target.value = ''; // 파일 선택 초기화
+                    URL.revokeObjectURL(this.src);
+                    return;
+                }
+
+                // 모든 검증 통과 시 이미지 설정
+                setSelectedProfileImage(file);
+                setPreviewUrl(URL.createObjectURL(file));
+            };
+
+            img.onerror = function() {
+                ToastManager.error('유효하지 않은 이미지 파일입니다.');
+                e.target.value = ''; // 파일 선택 초기화
+                URL.revokeObjectURL(this.src);
+            };
+
+            img.src = URL.createObjectURL(file);
         }
     };
 
@@ -82,8 +124,20 @@ const ProfileHeader = ({ user, onUserUpdate }) => {
     // 프로필 이미지 변경 취소
     const handleCancelImageChange = () => {
         setSelectedProfileImage(null);
+        if (previewUrl) {
+            URL.revokeObjectURL(previewUrl);
+        }
         setPreviewUrl(null);
     };
+
+    // 컴포넌트 언마운트 시 메모리 정리
+    useEffect(() => {
+        return () => {
+            if (previewUrl) {
+                URL.revokeObjectURL(previewUrl);
+            }
+        };
+    }, [previewUrl]);
 
     return (
         <div className="bg-primary p-8 rounded-lg shadow border mb-6 text-center">
@@ -92,12 +146,28 @@ const ProfileHeader = ({ user, onUserUpdate }) => {
             </h1>
 
             {/* 프로필 이미지 */}
-            <div className="inline-block relative mb-6">
-                <div className="w-32 h-32 rounded-full overflow-hidden border-4 border-light mx-auto relative">
+            <div style={{
+                display: 'inline-block',
+                position: 'relative',
+                marginBottom: '24px'
+            }}>
+                <div style={{
+                    width: '128px',
+                    height: '128px',
+                    borderRadius: '50%',
+                    overflow: 'hidden',
+                    border: '4px solid #e2e8f0',
+                    margin: '0 auto',
+                    position: 'relative'
+                }}>
                     <img
                         src={previewUrl || user?.profileImageUrl || "/default-avatar.png"}
                         alt="프로필 이미지"
-                        className="w-50 h-50 object-cover"
+                        style={{
+                            width: '100%',
+                            height: '100%',
+                            objectFit: 'cover'
+                        }}
                         onError={(e) => {
                             e.target.src = "/default-avatar.png";
                         }}
@@ -107,13 +177,63 @@ const ProfileHeader = ({ user, onUserUpdate }) => {
                 {/* 이미지 업로드 버튼 */}
                 <label
                     htmlFor="profile-image-input"
-                    className="absolute bottom-0 right-0 w-8 h-8 bg-primary rounded-full flex items-center justify-center cursor-pointer text-white text-base border-2 border-white hover:bg-primary-dark transition-colors"
+                    style={{
+                        position: 'absolute',
+                        bottom: '4px',
+                        right: '4px',
+                        width: '36px',
+                        height: '36px',
+                        backgroundColor: '#38d39f',
+                        borderRadius: '50%',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        cursor: 'pointer',
+                        border: '3px solid #fff',
+                        boxShadow: '0 2px 8px rgba(0, 0, 0, 0.15)',
+                        transition: 'all 0.2s ease',
+                        transform: 'scale(1)'
+                    }}
+                    onMouseEnter={(e) => {
+                        e.target.style.backgroundColor = '#2fb88a';
+                        e.target.style.transform = 'scale(1.1)';
+                        e.target.style.boxShadow = '0 4px 12px rgba(0, 0, 0, 0.25)';
+                    }}
+                    onMouseLeave={(e) => {
+                        e.target.style.backgroundColor = '#38d39f';
+                        e.target.style.transform = 'scale(1)';
+                        e.target.style.boxShadow = '0 2px 8px rgba(0, 0, 0, 0.15)';
+                    }}
                 >
-                    📷
+                    {/* 카메라 SVG 아이콘 */}
+                    <svg 
+                        width="18" 
+                        height="18" 
+                        viewBox="0 0 24 24" 
+                        fill="none" 
+                        xmlns="http://www.w3.org/2000/svg"
+                    >
+                        <path 
+                            d="M23 19C23 19.5304 22.7893 20.0391 22.4142 20.4142C22.0391 20.7893 21.5304 21 21 21H3C2.46957 21 1.96086 20.7893 1.58579 20.4142C1.21071 20.0391 1 19.5304 1 19V8C1 7.46957 1.21071 6.96086 1.58579 6.58579C1.96086 6.21071 2.46957 6 3 6H7L9 3H15L17 6H21C21.5304 6 22.0391 6.21071 22.4142 6.58579C22.7893 6.96086 23 7.46957 23 8V19Z" 
+                            stroke="white" 
+                            strokeWidth="2" 
+                            strokeLinecap="round" 
+                            strokeLinejoin="round"
+                        />
+                        <circle 
+                            cx="12" 
+                            cy="13" 
+                            r="4" 
+                            stroke="white" 
+                            strokeWidth="2" 
+                            strokeLinecap="round" 
+                            strokeLinejoin="round"
+                        />
+                    </svg>
                     <input
                         id="profile-image-input"
                         type="file"
-                        accept="image/*"
+                        accept="image/jpeg,image/jpg,image/png,image/webp"
                         onChange={handleImageSelect}
                         style={{ display: "none" }}
                     />
@@ -122,19 +242,64 @@ const ProfileHeader = ({ user, onUserUpdate }) => {
 
             {/* 이미지 변경 버튼들 */}
             {selectedProfileImage && (
-                <div className="flex gap-3 justify-center mb-6">
+                <div style={{
+                    display: 'flex',
+                    gap: '12px',
+                    justifyContent: 'center',
+                    marginBottom: '24px'
+                }}>
                     <button
                         onClick={handleSaveProfileImage}
                         disabled={savingProfileImage}
-                        className={`px-4 py-2 text-white border-none rounded text-sm font-medium transition-all ${
-                            savingProfileImage ? 'bg-muted cursor-not-allowed' : 'btn-primary hover:shadow-lg hover:-translate-y-1'
-                        }`}
+                        style={{
+                            padding: '8px 16px',
+                            color: '#fff',
+                            backgroundColor: savingProfileImage ? '#9ca3af' : '#38d39f',
+                            border: 'none',
+                            borderRadius: '6px',
+                            fontSize: '14px',
+                            fontWeight: '600',
+                            cursor: savingProfileImage ? 'not-allowed' : 'pointer',
+                            transition: 'all 0.2s ease'
+                        }}
+                        onMouseEnter={(e) => {
+                            if (!savingProfileImage) {
+                                e.target.style.backgroundColor = '#2fb88a';
+                                e.target.style.transform = 'translateY(-1px)';
+                                e.target.style.boxShadow = '0 4px 8px rgba(0, 0, 0, 0.15)';
+                            }
+                        }}
+                        onMouseLeave={(e) => {
+                            if (!savingProfileImage) {
+                                e.target.style.backgroundColor = '#38d39f';
+                                e.target.style.transform = 'translateY(0)';
+                                e.target.style.boxShadow = 'none';
+                            }
+                        }}
                     >
                         {savingProfileImage ? "저장 중..." : "저장"}
                     </button>
                     <button
                         onClick={handleCancelImageChange}
-                        className="px-4 py-2 bg-muted text-secondary border border-light rounded text-sm cursor-pointer font-medium hover:bg-secondary transition-colors"
+                        style={{
+                            padding: '8px 16px',
+                            backgroundColor: '#f7fafc',
+                            color: '#4a5568',
+                            border: '1px solid #e2e8f0',
+                            borderRadius: '6px',
+                            fontSize: '14px',
+                            fontWeight: '600',
+                            cursor: 'pointer',
+                            transition: 'all 0.2s ease'
+                        }}
+                        onMouseEnter={(e) => {
+                            e.target.style.backgroundColor = '#edf2f7';
+                            e.target.style.borderColor = '#cbd5e0';
+                        }}
+                        onMouseLeave={(e) => {
+                            e.target.style.backgroundColor = '#f7fafc';
+                            e.target.style.borderColor = '#e2e8f0';
+                        }}
                     >
                         취소
                     </button>
