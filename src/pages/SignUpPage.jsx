@@ -125,12 +125,12 @@ export default function SignUpPage() {
                     </div>
                     <div style={{ marginBottom: 10 }}>
                         <input name="roadAddress" value={form.roadAddress} onChange={onChange}
-                               placeholder="주소를 입력하세요" style={inputStyle} />
+                               placeholder="도로명 주소를 입력하세요" style={inputStyle} />
                         <div style={labelStyle}>도로명 주소</div>
                     </div>
                     <div style={{ marginBottom: 26 }}>
                         <input name="detailAddress" value={form.detailAddress} onChange={onChange}
-                               placeholder="주소를 입력하세요" style={inputStyle} />
+                               placeholder="상세 주소를 입력하세요" style={inputStyle} />
                         <div style={labelStyle}>상세 주소</div>
                     </div>
                     <div style={{ marginBottom: 22 }}>
