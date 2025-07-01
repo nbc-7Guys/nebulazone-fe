@@ -17,8 +17,8 @@ const auctionApi = {
 
     // 수동 경매 종료
     endAuction: (auctionId, endData) =>
-        apiRequest(`/auctions/${auctionId}/manual-end`, {
-            method: 'PATCH',
+        apiRequest(`/auctions/${auctionId}`, {
+            method: 'POST',
             data: endData,
         }),
 
@@ -36,9 +36,9 @@ const auctionApi = {
 
 const bidApi = {
     // 입찰하기
-    createBid: async (bidData) => {
+    createBid: async (auctionId, bidData) => {
         try {
-            return await apiRequest('/bids', {
+            return await apiRequest(`/auctions/${auctionId}/bids`, {
                 method: 'POST',
                 data: bidData,
             });
@@ -48,14 +48,18 @@ const bidApi = {
         }
     },
 
+    // 특정 경매의 입찰 내역 조회
+    getAuctionBids: (auctionId, page = 1, size = 10) =>
+        apiRequest(`/auctions/${auctionId}/bids?page=${page}&size=${size}`, {}, false),
+
     // 내 입찰 목록
     getMyBids: (page = 1, size = 10) =>
-        apiRequest(`/bids/my?page=${page}&size=${size}`),
+        apiRequest(`/bids/me?page=${page}&size=${size}`),
 
     // 입찰 취소
-    deleteBid: async (bidId) => {
+    deleteBid: async (auctionId, bidPrice) => {
         try {
-            return await apiRequest(`/bids/${bidId}`, {
+            return await apiRequest(`/auctions/${auctionId}/bids/${bidPrice}`, {
                 method: 'DELETE',
             });
         } catch (error) {
