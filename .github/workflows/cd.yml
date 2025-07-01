@@ -21,7 +21,7 @@ jobs:
         run: echo "${{ secrets.ENV_PRODUCTION }}" > .env.production
 
       - name: Deploy to Vercel
-        uses: amondnet/vercel-action@latest
+        uses: amondnet/vercel-action@25
         with:
           vercel-token: ${{ secrets.VERCEL_TOKEN }}
           vercel-org-id: ${{ secrets.VERCEL_ORG_ID }}
