@@ -152,10 +152,12 @@ function WebSocketProvider({ children }) {
 
     return children;
 }
+import AdminPointManagementPage from "./pages/AdminPointManagementPage";
+import PointManagementPage from "./pages/PointManagementPage";
 import OAuthRedirectPage from "./pages/OAuthRedirectPage";
 
 function App() {
-    const isDevelopment = import.meta.env.DEV;
+    
 
     return (
         <BrowserRouter>
@@ -229,6 +231,20 @@ function App() {
                                 <Route path="/transactions" element={
                                     <PrivateRoute>
                                         <TransactionHistoryPage />
+                                    </PrivateRoute>
+                                } />
+
+                                {/* 관리자 관련 라우트 */}
+                                <Route path="/admin/points" element={
+                                    <PrivateRoute>
+                                        <AdminPointManagementPage />
+                                    </PrivateRoute>
+                                } />
+
+                                {/* 포인트 관련 라우트 */}
+                                <Route path="/points" element={
+                                    <PrivateRoute>
+                                        <PointManagementPage />
                                     </PrivateRoute>
                                 } />
 
