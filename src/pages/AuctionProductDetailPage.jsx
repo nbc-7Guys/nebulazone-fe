@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from "react";
-import { useParams, useNavigate } from "react-router-dom";
+import { useParams, useNavigate, useSearchParams } from "react-router-dom";
 import { auctionApi, bidApi } from "../services/api";
 import { userApi } from "../services/api/users";
 import HeaderNav from "../components/layout/HeaderNav";
@@ -11,6 +11,8 @@ import { JwtManager } from "../services/managers/JwtManager";
 export default function AuctionProductDetailPage() {
     const { id } = useParams(); // auctionId
     const navigate = useNavigate();
+    const [searchParams] = useSearchParams();
+    const catalogId = searchParams.get('catalogId');
 
     const [auction, setAuction] = useState(null);
     const [loading, setLoading] = useState(true);
@@ -547,14 +549,27 @@ export default function AuctionProductDetailPage() {
         const handleWonUpdate = (message) => {
             try {
                 const wonUpdate = JSON.parse(message.body);
-                const finalPrice = wonUpdate.finalPrice || wonUpdate.currentPrice || wonUpdate.price || wonUpdate.bidPrice;
+                console.log('🏆 낙찰 업데이트 받음 - 전체 데이터:', JSON.stringify(wonUpdate, null, 2));
                 
-                console.log('🏆 낙찰 업데이트 받음:', wonUpdate);
+                // 다양한 가능한 필드명들 시도
+                const finalPrice = wonUpdate.finalPrice || 
+                                 wonUpdate.currentPrice || 
+                                 wonUpdate.price || 
+                                 wonUpdate.bidPrice ||
+                                 wonUpdate.wonBidPrice ||
+                                 wonUpdate.auctionPrice ||
+                                 wonUpdate.endPrice ||
+                                 wonUpdate.wonPrice ||
+                                 auction?.currentPrice;  // 현재 경매가를 fallback으로 사용
+                
+                console.log('🏆 추출된 낙찰가:', finalPrice);
+                console.log('🏆 가능한 모든 필드:', Object.keys(wonUpdate));
+                console.log('🏆 현재 경매가 (fallback):', auction?.currentPrice);
                 
                 setAuction(prev => ({
                     ...prev,
                     isWon: true,
-                    currentPrice: finalPrice,
+                    currentPrice: finalPrice || prev.currentPrice,  // finalPrice가 없으면 기존 currentPrice 유지
                     endTime: new Date().toISOString() // 현재 시간으로 종료 시간 업데이트
                 }));
                 
@@ -564,7 +579,8 @@ export default function AuctionProductDetailPage() {
                 // 경매 정보도 새로고침
                 fetchAuction();
                 
-                toast.success(`🎉 낙찰 완료!\n최종 낙찰가: ${finalPrice ? finalPrice.toLocaleString() : '정보 없음'}원`);
+                const displayPrice = finalPrice || auction?.currentPrice;
+                toast.success(`🎉 낙찰 완료!\n최종 낙찰가: ${displayPrice ? displayPrice.toLocaleString() : '정보 없음'}원`);
             } catch (error) {
                 console.error('낙찰 업데이트 처리 오류:', error);
             }
@@ -772,6 +788,36 @@ export default function AuctionProductDetailPage() {
                 <div style={{ margin: "10px 0 18px 0", color: "#333", fontSize: 18, fontWeight: 700 }}>
                     판매자: {auction.sellerNickname}
                 </div>
+
+                {/* 카탈로그 링크 */}
+                {catalogId && (
+                    <div style={{ 
+                        marginTop: 18, 
+                        marginBottom: 18,
+                        padding: "12px 16px", 
+                        backgroundColor: "#f8fafc", 
+                        borderRadius: 8,
+                        border: "1px solid #e2e8f0"
+                    }}>
+                        <span style={{ fontSize: 14, color: "#666", marginRight: 8 }}>
+                            📖 제품 카탈로그:
+                        </span>
+                        <button 
+                            onClick={() => navigate(`/catalogs/${catalogId}`)}
+                            style={{ 
+                                color: "#7f56fd", 
+                                textDecoration: "underline", 
+                                background: "none", 
+                                border: "none", 
+                                cursor: "pointer",
+                                fontSize: 14,
+                                fontWeight: 500
+                            }}
+                        >
+                            상세 사양 및 리뷰 보기 →
+                        </button>
+                    </div>
+                )}
                 {/* 가격 정보 카드 */}
                 <div style={{ 
                     display: "flex", 
