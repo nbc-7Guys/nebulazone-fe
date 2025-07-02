@@ -12,10 +12,10 @@ const ProductForm = ({
     onBack
 }) => {
     const auctionDurationOptions = [
-        { value: 'minute_1', label: '1분 (테스트용)' },
-        { value: 'hour_12', label: '12시간' },
-        { value: 'hour_24', label: '24시간' },
-        { value: 'day_3', label: '3일' }
+        { value: 'MINUTE_1', label: '1분 (테스트용)' },
+        { value: 'HOUR_12', label: '12시간' },
+        { value: 'HOUR_24', label: '24시간' },
+        { value: 'DAY_3', label: '3일' }
     ];
 
     return (
@@ -159,12 +159,17 @@ const ProductForm = ({
                     {formData.type === 'AUCTION' ? '경매 시작가 *' : '판매가격 *'}
                 </label>
                 <input
-                    type="number"
+                    type="text"
                     value={formData.price}
-                    onChange={(e) => handleFormChange('price', e.target.value)}
-                    placeholder="가격을 입력하세요"
+                    onChange={(e) => {
+                        const value = e.target.value;
+                        // 숫자와 콤마만 허용
+                        const numericValue = value.replace(/[^0-9]/g, '');
+                        const formattedValue = numericValue ? parseInt(numericValue).toLocaleString() : '';
+                        handleFormChange('price', formattedValue);
+                    }}
+                    placeholder="가격을 입력하세요 (예: 50,000)"
                     required
-                    min="0"
                     style={{
                         width: "100%",
                         padding: "12px 16px",
@@ -176,45 +181,63 @@ const ProductForm = ({
                 />
             </div>
 
-            {/* 경매 종료시간 (경매일 때만 표시) */}
+            {/* 경매 종료시간 안내 및 선택 */}
             {formData.type === 'AUCTION' && (
-                <div style={{ marginBottom: "24px" }}>
-                    <label style={{
-                        display: "block",
-                        fontSize: "14px",
-                        fontWeight: "500",
-                        marginBottom: "8px",
-                        color: "#374151"
+                <>
+                    <div style={{ 
+                        marginBottom: '1rem',
+                        padding: '1rem',
+                        backgroundColor: '#f8f9fa',
+                        borderRadius: '8px',
+                        border: '1px solid #dee2e6'
                     }}>
-                        경매 기간 (선택사항)
-                    </label>
-                    <select
-                        value={formData.endTime}
-                        onChange={(e) => handleFormChange('endTime', e.target.value)}
-                        style={{
-                            width: "100%",
-                            padding: "12px 16px",
-                            border: "1px solid #d1d5db",
-                            borderRadius: "8px",
-                            fontSize: "16px",
-                            outline: "none",
-                            backgroundColor: "#fff"
-                        }}
-                    >
-                        {auctionDurationOptions.map(option => (
-                            <option key={option.value} value={option.value}>
-                                {option.label}
-                            </option>
-                        ))}
-                    </select>
-                    <div style={{
-                        fontSize: "12px",
-                        color: "#6b7280",
-                        marginTop: "4px"
-                    }}>
-                        기간을 설정하지 않으면 1분 경매로 진행됩니다.
+                        <div style={{ color: '#6c757d', fontSize: '0.9rem', marginBottom: '0.5rem' }}>
+                            💡 경매 종료 시간 안내
+                        </div>
+                        <div style={{ color: '#495057', fontSize: '0.85rem' }}>
+                            • 현재 시간: {new Date().toLocaleString('ko-KR')}
+                            <br />
+                            • 선택한 기간 후에 자동으로 경매가 종료됩니다
+                            <br />
+                            • 테스트용 1분 옵션도 제공합니다
+                            <br />
+                            • 경매는 등록 즉시 시작됩니다
+                        </div>
                     </div>
-                </div>
+                    
+                    <div style={{ marginBottom: "24px" }}>
+                        <label style={{
+                            display: "block",
+                            fontSize: "14px",
+                            fontWeight: "500",
+                            marginBottom: "8px",
+                            color: "#374151"
+                        }}>
+                            경매 기간 *
+                        </label>
+                        <select
+                            value={formData.endTime}
+                            onChange={(e) => handleFormChange('endTime', e.target.value)}
+                            required
+                            style={{
+                                width: "100%",
+                                padding: "12px 16px",
+                                border: "1px solid #d1d5db",
+                                borderRadius: "8px",
+                                fontSize: "16px",
+                                outline: "none",
+                                backgroundColor: "#fff"
+                            }}
+                        >
+                            <option value="">경매 기간을 선택하세요</option>
+                            {auctionDurationOptions.map(option => (
+                                <option key={option.value} value={option.value}>
+                                    {option.label}
+                                </option>
+                            ))}
+                        </select>
+                    </div>
+                </>
             )}
 
             {/* 이미지 업로드 */}
