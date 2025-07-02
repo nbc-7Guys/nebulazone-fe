@@ -1,20 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { BrowserRouter, Routes, Route, useLocation } from "react-router-dom";
-import LandingPage from "./pages/LandingPage";
-import ProductListPage from "./pages/ProductListPage";
-import DirectProductDetailPage from "./pages/DirectProductDetailPage.jsx";
-import ProductCreatePage from "./pages/ProductCreatePage";
-import MyPage from "./pages/MyPage";
-import ChatRoomPage from "./pages/ChatRoomPage";
-import ChatRoomListPage from "./pages/ChatRoomListPage";
-import SignUpPage from "./pages/SignUpPage";
-import LoginPage from "./pages/LoginPage";
-import TransactionHistoryPage from "./pages/TransactionHistoryPage";
-import PostListPage from "./pages/PostListPage";
-import PostDetailPage from "./pages/PostDetailPage";
-import PostCreatePage from "./pages/PostCreatePage";
-import PostEditPage from "./pages/PostEditPage";
-import PrivateRoute from "./components/common/PrivateRoute";
+import { BrowserRouter, useLocation } from "react-router-dom";
 import ErrorBoundary from "./components/common/ErrorBoundary";
 import { Analytics } from "@vercel/analytics/react";
 import { JwtManager } from "./services/managers/JwtManager";
@@ -24,10 +9,7 @@ import { ToastProvider, useToastContext } from "./contexts/ToastContext";
 import { ToastManager } from "./utils/error/errorHandler";
 import ToastDemo from "./components/ui/ToastDemo";
 import WebSocketStatus from "./components/common/WebSocketStatus";
-import AuctionProductDetailPage from "./pages/AuctionProductDetailPage.jsx";
-import TossPaymentSuccessPage from "./pages/TossPaymentSuccessPage.jsx";
-import CatalogDetailPage from "./pages/CatalogDetailPage.jsx";
-import CatalogListPage from "./pages/CatalogListPage.jsx";
+import GlobalRoutes from "./routes/GlobalRoutes";
 
 // Toast Manager 초기화 컴포넌트
 function ToastManagerInitializer({ children }) {
@@ -151,125 +133,21 @@ function WebSocketProvider({ children }) {
 
     return children;
 }
-import AdminPointManagementPage from "./pages/AdminPointManagementPage";
-import PointManagementPage from "./pages/PointManagementPage";
-import OAuthRedirectPage from "./pages/OAuthRedirectPage";
 
 function App() {
-    
-
     return (
         <BrowserRouter>
             <ToastProvider position="top-right">
                 <ToastManagerInitializer>
                     <NotificationProvider>
                         <WebSocketProvider>
-                        <ErrorBoundary>
-                            <Routes>
-                                <Route path="/" element={<LandingPage />} />
-
-                                {/* 상품 관련 라우트 */}
-                                <Route path="/products/direct" element={<ProductListPage />} />
-                                <Route path="/products/auction" element={<ProductListPage />} />
-                                <Route path="/products/create" element={
-                                    <PrivateRoute>
-                                        <ProductCreatePage />
-                                    </PrivateRoute>
-                                } />
-                                <Route path="/products/direct/:id" element={<DirectProductDetailPage />} />
-                                <Route path="/products/auction/:id" element={<AuctionProductDetailPage />} />
-                                
-                                {/* 카탈로그 관련 라우트 */}
-                                <Route path="/catalogs" element={<CatalogListPage />} />
-                                <Route path="/catalogs/:catalogId" element={<CatalogDetailPage />} />
-
-                                {/* 게시글 관련 라우트 */}
-                                <Route path="/posts" element={<PostListPage />} />
-                                <Route path="/posts/create" element={
-                                    <PrivateRoute>
-                                        <PostCreatePage />
-                                    </PrivateRoute>
-                                } />
-                                <Route path="/posts/:postId" element={<PostDetailPage />} />
-                                <Route path="/posts/:postId/edit" element={
-                                    <PrivateRoute>
-                                        <PostEditPage />
-                                    </PrivateRoute>
-                                } />
-
-                                {/* 사용자 관련 라우트 */}
-                                <Route path="/mypage" element={
-                                    <PrivateRoute>
-                                        <MyPage />
-                                    </PrivateRoute>
-                                } />
-                                <Route path="/signup" element={
-                                    <PrivateRoute requireAuth={false}>
-                                        <SignUpPage />
-                                    </PrivateRoute>
-                                } />
-                                <Route path="/login" element={
-                                    <PrivateRoute requireAuth={false}>
-                                        <LoginPage />
-                                    </PrivateRoute>
-                                } />
-
-                                {/* 채팅 관련 라우트 */}
-                                <Route path="/chat/:roomId" element={
-                                    <PrivateRoute>
-                                        <ChatRoomPage />
-                                    </PrivateRoute>
-                                } />
-                                <Route path="/chat/rooms" element={
-                                    <PrivateRoute>
-                                        <ChatRoomListPage />
-                                    </PrivateRoute>
-                                } />
-
-                                {/* 거래 관련 라우트 */}
-                                <Route path="/transactions" element={
-                                    <PrivateRoute>
-                                        <TransactionHistoryPage />
-                                    </PrivateRoute>
-                                } />
-
-                                {/* 관리자 관련 라우트 */}
-                                <Route path="/admin/points" element={
-                                    <PrivateRoute>
-                                        <AdminPointManagementPage />
-                                    </PrivateRoute>
-                                } />
-
-                                {/* 포인트 관련 라우트 */}
-                                <Route path="/points" element={
-                                    <PrivateRoute>
-                                        <PointManagementPage />
-                                    </PrivateRoute>
-                                } />
-
-                                {/* 소셜 로그인 */}
-                                <Route path="/oauth/redirect" element={<OAuthRedirectPage />} />
-
-                                {/* 포인트 충전 관련 라우트 - 기존 경로를 포인트 관리 페이지로 리다이렉트 */}
-                                <Route path="/point/charge" element={
-                                    <PrivateRoute>
-                                        <PointManagementPage />
-                                    </PrivateRoute>
-                                } />
-                                <Route path="/toss/success" element={
-                                    <PrivateRoute>
-                                        <TossPaymentSuccessPage />
-                                    </PrivateRoute>
-                                } />
-
-                            </Routes>
-                        </ErrorBoundary>
-                        <Analytics />
-                        {/* 개발 환경에서만 WebSocket 상태 표시 */}
-                        {/*{isDevelopment && <WebSocketStatus />}*/}
-                        {/* 개발 환경에서만 Toast 데모 표시 */}
-                        {/*{isDevelopment && <ToastDemo />}*/}
-                        {/*<WebSocketStatus />*/}
+                            <ErrorBoundary>
+                                <GlobalRoutes />
+                            </ErrorBoundary>
+                            <Analytics />
+                            {/* 개발 환경에서만 WebSocket 상태 표시 */}
+                            {/*{isDevelopment && <WebSocketStatus />}*/}
+                            {/*<WebSocketStatus />*/}
                         </WebSocketProvider>
                     </NotificationProvider>
                 </ToastManagerInitializer>

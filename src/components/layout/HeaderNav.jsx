@@ -2,7 +2,7 @@ import React, { useState } from "react";
 import NotificationDisplay from "../common/NotificationDisplay";
 import {useLocation, useNavigate} from "react-router-dom";
 import {JwtManager} from "../../services/managers/JwtManager";
-import {getMyEmailFromJwt, getMyUserIdFromJwt} from "../../utils/auth/auth";
+import {getMyEmailFromJwt, getMyUserIdFromJwt, isAdmin} from "../../utils/auth/auth";
 import {authApi} from "../../services/api";
 
 export default function HeaderNav() {
@@ -11,6 +11,7 @@ export default function HeaderNav() {
     const jwt = JwtManager.getJwt();
     const userEmail = getMyEmailFromJwt();
     const userId = getMyUserIdFromJwt();
+    const hasAdminRole = isAdmin();
     const [isMenuOpen, setIsMenuOpen] = useState(false);
 
     const handleLogout = async () => {
@@ -99,6 +100,22 @@ export default function HeaderNav() {
                         active={isActive("/points") || isActive("/point/charge")}
                         text="포인트 관리"
                     />
+
+                    {/* 관리자 전용 메뉴 */}
+                    {hasAdminRole && (
+                        <NavLink
+                            onClick={() => navigate("/nebulazone-admin")}
+                            active={location.pathname.startsWith("/nebulazone-admin")}
+                            text="🛠️ 관리자"
+                            style={{
+                                background: "linear-gradient(135deg, #ff6b6b, #ee5a24)",
+                                color: "#fff",
+                                padding: "8px 16px",
+                                borderRadius: "20px",
+                                fontWeight: "600"
+                            }}
+                        />
+                    )}
                 </div>
 
                 {/* 사용자 메뉴 */}
@@ -241,6 +258,24 @@ export default function HeaderNav() {
                                         active={isActive("/chat/rooms")}
                                     />
 
+                                    {/* 관리자 전용 메뉴 */}
+                                    {hasAdminRole && (
+                                        <>
+                                            <div style={{
+                                                height: "1px",
+                                                backgroundColor: "#f1f5f9",
+                                                margin: "12px 20px"
+                                            }}></div>
+                                            <MenuItem
+                                                onClick={() => handleMenuItemClick("/nebulazone-admin")}
+                                                text="관리자 대시보드"
+                                                icon="🛠️"
+                                                active={location.pathname.startsWith("/nebulazone-admin")}
+                                                isAdmin={true}
+                                            />
+                                        </>
+                                    )}
+
                                     <div style={{
                                         height: "1px",
                                         backgroundColor: "#f1f5f9",
@@ -338,7 +373,7 @@ export default function HeaderNav() {
     );
 }
 
-function NavLink({ onClick, active, text }) {
+function NavLink({ onClick, active, text, style = {} }) {
     return (
         <button
             onClick={onClick}
@@ -352,7 +387,8 @@ function NavLink({ onClick, active, text }) {
                 fontWeight: active ? "600" : "400",
                 cursor: "pointer",
                 transition: "all 0.2s ease",
-                textDecoration: "none"
+                textDecoration: "none",
+                ...style  // 커스텀 스타일 적용
             }}
             onMouseEnter={(e) => {
                 if (!active) {
@@ -372,18 +408,20 @@ function NavLink({ onClick, active, text }) {
     );
 }
 
-function MenuItem({ onClick, text, icon, active, isLogout }) {
+function MenuItem({ onClick, text, icon, active, isLogout, isAdmin }) {
     return (
         <button
             onClick={onClick}
             style={{
                 width: "100%",
                 padding: "14px 20px",
-                backgroundColor: active ? "#f0fff4" : "transparent",
-                color: isLogout ? "#ef4444" : (active ? "#38d39f" : "#4a5568"),
-                border: "none",
+                backgroundColor: active ? (isAdmin ? "#fff5f5" : "#f0fff4") : "transparent",
+                color: isLogout ? "#ef4444" : isAdmin ? (active ? "#e53e3e" : "#d69e2e") : (active ? "#38d39f" : "#4a5568"),
+                border: isAdmin ? "1px solid #fed7d7" : "none",
+                borderRadius: isAdmin ? "8px" : "0",
+                margin: isAdmin ? "0 20px" : "0",
                 fontSize: "15px",
-                fontWeight: active ? "600" : "500",
+                fontWeight: active ? "600" : isAdmin ? "600" : "500",
                 cursor: "pointer",
                 transition: "all 0.2s ease",
                 textAlign: "left",
@@ -393,14 +431,14 @@ function MenuItem({ onClick, text, icon, active, isLogout }) {
             }}
             onMouseEnter={(e) => {
                 if (!active) {
-                    e.target.style.backgroundColor = isLogout ? "#fef2f2" : "#f8fafc";
-                    e.target.style.paddingLeft = "24px";
+                    e.target.style.backgroundColor = isLogout ? "#fef2f2" : isAdmin ? "#fff5f5" : "#f8fafc";
+                    e.target.style.paddingLeft = isAdmin ? "24px" : "24px";
                 }
             }}
             onMouseLeave={(e) => {
                 if (!active) {
                     e.target.style.backgroundColor = "transparent";
-                    e.target.style.paddingLeft = "20px";
+                    e.target.style.paddingLeft = isAdmin ? "20px" : "20px";
                 }
             }}
         >
