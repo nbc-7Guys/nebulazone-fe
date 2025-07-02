@@ -11,6 +11,8 @@ const LandingPage = () => {
     const [popularAuctions, setPopularAuctions] = useState([]);
     const [closingAuctions, setClosingAuctions] = useState([]);
     const [popularCatalogs, setPopularCatalogs] = useState([]);
+    const [popularLastUpdated, setPopularLastUpdated] = useState(null);
+    const [closingLastUpdated, setClosingLastUpdated] = useState(null);
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState(null);
 
@@ -18,50 +20,54 @@ const LandingPage = () => {
         const fetchAuctions = async () => {
             setIsLoading(true);
             try {
+                
                 // 인기 경매 가져오기
                 const popularResponse = await auctionApi.getAuctionsBySort('POPULAR');
-                console.log('인기 경매 응답 전체 데이터:', popularResponse);
                 
                 // 응답 구조 확인 및 데이터 추출
                 let popularData = [];
+                let popularUpdated = null;
                 if (Array.isArray(popularResponse)) {
                     popularData = popularResponse;
                 } else if (popularResponse && typeof popularResponse === 'object') {
-                    // 응답이 배열이 아닌 객체인 경우 (예: { data: [...] } 형태)
-                    const possibleArrayKeys = ['data', 'content', 'auctions', 'items', 'results'];
+                    // 응답이 배열이 아닌 객체인 경우 (예: { auctions: [...], lastUpdated: "..." } 형태)
+                    const possibleArrayKeys = ['auctions', 'data', 'content', 'items', 'results'];
                     for (const key of possibleArrayKeys) {
                         if (Array.isArray(popularResponse[key])) {
                             popularData = popularResponse[key];
                             break;
                         }
                     }
+                    // lastUpdated 정보 추출
+                    popularUpdated = popularResponse.lastUpdated;
                 }
                 
-                console.log('처리된 인기 경매 데이터:', popularData);
                 setPopularAuctions(popularData?.slice(0, 4) || []); // 상위 4개만 표시
+                setPopularLastUpdated(popularUpdated);
                 
                 // 마감 임박 경매 가져오기
                 const closingResponse = await auctionApi.getAuctionsBySort('CLOSING');
-                console.log('마감 임박 경매 응답 전체 데이터:', closingResponse);
                 
                 // 응답 구조 확인 및 데이터 추출
                 let closingData = [];
+                let closingUpdated = null;
                 if (Array.isArray(closingResponse)) {
                     closingData = closingResponse;
                 } else if (closingResponse && typeof closingResponse === 'object') {
-                    // 응답이 배열이 아닌 객체인 경우 (예: { data: [...] } 형태)
-                    const possibleArrayKeys = ['data', 'content', 'auctions', 'items', 'results'];
+                    // 응답이 배열이 아닌 객체인 경우 (예: { auctions: [...], lastUpdated: "..." } 형태)
+                    const possibleArrayKeys = ['auctions', 'data', 'content', 'items', 'results'];
                     for (const key of possibleArrayKeys) {
                         if (Array.isArray(closingResponse[key])) {
                             closingData = closingResponse[key];
-                            console.log(`마감 임박 경매 데이터 찾음: closingResponse.${key}`);
                             break;
                         }
                     }
+                    // lastUpdated 정보 추출
+                    closingUpdated = closingResponse.lastUpdated;
                 }
                 
-                console.log('처리된 마감 임박 경매 데이터:', closingData);
                 setClosingAuctions(closingData?.slice(0, 4) || []); // 상위 4개만 표시
+                setClosingLastUpdated(closingUpdated);
                 
                 // 인기 카탈로그 가져오기 (CPU 카테고리에서 4개)
                 try {
@@ -123,19 +129,17 @@ const LandingPage = () => {
     const renderAuctionCard = (auction) => {
         if (!auction) return null;
         
-        // 콘솔에 현재 렌더링 중인 경매 객체를 출력하여 디버깅
-        console.log('렌더링 중인 경매 객체:', auction);
         
         // 서버 응답과 필드명 매핑
         const mappedAuction = {
             id: auction.auctionId,
             title: auction.productName || '제목 없음',
-            currentPrice: auction.currentPrice || auction.startPrice || 0,
+            currentPrice: auction.currentPrice || 0,
             startPrice: auction.startPrice || 0,
             endTime: auction.endTime,
             imageUrl: auction.productImageUrl && auction.productImageUrl !== '이미지 없음' ? auction.productImageUrl : '',
             bidCount: auction.bidCount || 0,
-            sellerNickname: auction.sellerNickname || '판매자 정보 없음'
+            sellerNickname: auction.sellerNickname || auction.sellerName || '판매자'
         };
         
         return (
@@ -151,7 +155,6 @@ const LandingPage = () => {
                             src={mappedAuction.imageUrl} 
                             alt={mappedAuction.title} 
                             onError={(e) => {
-                                console.log('이미지 로딩 오류, 이미지 제거:', e.target.src);
                                 // 이미지 태그 자체를 제거
                                 e.target.style.display = 'none';
                             }}
@@ -179,6 +182,110 @@ const LandingPage = () => {
                 </div>
             </div>
         );
+    };
+
+    // 홈화면용 컴팩트한 경매 카드 렌더링 함수 (입찰 건수와 판매자 정보 강조)
+    const renderAuctionCardWithDetails = (auction) => {
+        if (!auction) return null;
+        
+        // 서버 응답과 필드명 매핑
+        const mappedAuction = {
+            id: auction.auctionId,
+            title: auction.productName || '제목 없음',
+            currentPrice: auction.currentPrice || 0,
+            startPrice: auction.startPrice || 0,
+            endTime: auction.endTime,
+            imageUrl: auction.productImageUrl && auction.productImageUrl !== '이미지 없음' ? auction.productImageUrl : '',
+            bidCount: auction.bidCount || 0,
+            sellerNickname: auction.sellerNickname || auction.sellerName || '판매자'
+        };
+        
+        return (
+            <div 
+                key={mappedAuction.id || `auction-${Math.random()}`} 
+                className="auction-card-compact"
+                onClick={() => mappedAuction.id ? navigate(`/products/auction/${mappedAuction.id}`) : null}
+            >
+                <div className="auction-image-compact">
+                    {mappedAuction.imageUrl && mappedAuction.imageUrl.trim() !== '' ? (
+                        <img 
+                            src={mappedAuction.imageUrl} 
+                            alt={mappedAuction.title} 
+                            onError={(e) => {
+                                e.target.style.display = 'none';
+                            }}
+                        />
+                    ) : (
+                        <div className="no-image-placeholder-compact">
+                            <span>📷</span>
+                        </div>
+                    )}
+                    <div className="auction-status-badge">
+                        <span className="time-left">
+                            {mappedAuction.endTime ? calculateTimeLeft(mappedAuction.endTime) : '정보 없음'}
+                        </span>
+                    </div>
+                    
+                    {/* 판매/낙찰 상태 마크 */}
+                    {(auction.isSold || auction.isWon || auction.isFailed) && (
+                        <div className="sale-status-badge" style={{
+                            position: 'absolute',
+                            top: '8px',
+                            right: '8px',
+                            backgroundColor: auction.isWon || auction.isSold ? '#fed7d7' : '#f7fafc',
+                            color: auction.isWon || auction.isSold ? '#f56565' : '#a0aec0',
+                            padding: '4px 8px',
+                            borderRadius: '12px',
+                            fontSize: '11px',
+                            fontWeight: '600',
+                            border: `1px solid ${auction.isWon || auction.isSold ? '#f56565' : '#a0aec0'}`,
+                            boxShadow: '0 2px 4px rgba(0,0,0,0.1)',
+                            zIndex: 10
+                        }}>
+                            {auction.isWon ? '낙찰완료' : auction.isSold ? '판매완료' : auction.isFailed ? '유찰' : '완료'}
+                        </div>
+                    )}
+                </div>
+                <div className="auction-info-compact">
+                    <h4 className="auction-title-compact">{mappedAuction.title}</h4>
+                    <div className="auction-price-compact">
+                        <span className="current-price">
+                            {mappedAuction.currentPrice > 0 
+                                ? formatPrice(mappedAuction.currentPrice) 
+                                : formatPrice(mappedAuction.startPrice)}
+                        </span>
+                        {mappedAuction.currentPrice === 0 && (
+                            <span className="start-price-label">시작가</span>
+                        )}
+                    </div>
+                    <div className="auction-details">
+                        <div className="bid-info">
+                            <span className="bid-count">🔥 {mappedAuction.bidCount}건 입찰</span>
+                        </div>
+                        <div className="seller-info">
+                            <span className="seller-name">👤 {mappedAuction.sellerNickname}</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        );
+    };
+
+    // 업데이트 시간 포맷팅 함수
+    const formatLastUpdated = (lastUpdated) => {
+        if (!lastUpdated) return null;
+        
+        try {
+            const date = new Date(lastUpdated);
+            const month = date.getMonth() + 1;
+            const day = date.getDate();
+            const hours = date.getHours();
+            const minutes = date.getMinutes();
+            
+            return `${month}/${day} ${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')} 기준`;
+        } catch (error) {
+            return null;
+        }
     };
 
     return (
@@ -295,75 +402,13 @@ const LandingPage = () => {
                 </div>
             </section>
 
-            {/* Categories Section */}
-            <section className="categories-section">
-                <div className="container">
-                    <h2 className="section-title">거래 방식</h2>
-                    <div className="categories-grid-two">
-                        <div className="category-card auction">
-                            <div className="category-icon">⚡</div>
-                            <h3>경매</h3>
-                            <p>실시간 입찰로 최적의 가격에 구매하세요</p>
-                            <div className="category-features">
-                                <span>• 실시간 입찰</span>
-                                <span>• 경쟁적 가격</span>
-                                <span>• 시간 제한</span>
-                            </div>
-                            <button onClick={() => navigate('/products/auction')}>
-                                경매 참여하기 →
-                            </button>
-                        </div>
-                        <div className="category-card instant">
-                            <div className="category-icon">🛍️</div>
-                            <h3>즉시 구매</h3>
-                            <p>정해진 가격으로 바로 구매 가능합니다</p>
-                            <div className="category-features">
-                                <span>• 즉시 구매</span>
-                                <span>• 고정 가격</span>
-                                <span>• 빠른 거래</span>
-                            </div>
-                            <button onClick={() => navigate('/products/direct')}>
-                                상품 둘러보기 →
-                            </button>
-                        </div>
-                    </div>
-                </div>
-            </section>
-
-            {/* 커뮤니티 섹션 */}
-            <section className="community-section">
-                <div className="container">
-                    <h2 className="section-title">커뮤니티</h2>
-                    <div className="community-grid">
-                        <div className="community-card">
-                            <h3>자유게시판</h3>
-                            <p>자유롭게 소통하고 정보를 공유하세요</p>
-                            <button onClick={() => navigate('/posts?type=FREE')}>
-                                자유게시판 →
-                            </button>
-                        </div>
-                        <div className="community-card">
-                            <h3>질문/답변</h3>
-                            <p>궁금한 것을 물어보고 답변을 받아보세요</p>
-                            <button onClick={() => navigate('/posts?type=QNA')}>
-                                질문게시판 →
-                            </button>
-                        </div>
-                        <div className="community-card">
-                            <h3>거래후기</h3>
-                            <p>거래 경험을 공유하고 후기를 확인하세요</p>
-                            <button onClick={() => navigate('/posts?type=REVIEW')}>
-                                후기게시판 →
-                            </button>
-                        </div>
-                    </div>
-                </div>
-            </section>
-
-            {/* Auction Section */}
+            {/* Auctions Section - 양 옆으로 나란히 배치 (위로 이동) */}
             <section id="auction-section" className="auctions-section">
                 <div className="container">
-                    <h2 className="section-title">인기 경매</h2>
+                    <h2 className="section-title">🔥 실시간 경매</h2>
+                    <div className="auction-update-info">
+                        <span className="update-schedule">📅 경매 순위는 5분마다 업데이트됩니다</span>
+                    </div>
                     {isLoading ? (
                         <div className="loading-spinner">
                             <div className="spinner"></div>
@@ -372,11 +417,42 @@ const LandingPage = () => {
                     ) : error ? (
                         <div className="error-message">{error}</div>
                     ) : (
-                        <div className="auctions-grid">
-                            {popularAuctions.length > 0 ? 
-                                popularAuctions.map(auction => renderAuctionCard(auction)) : 
-                                <div className="no-auctions">현재 진행 중인 인기 경매가 없습니다.</div>
-                            }
+                        <div className="dual-auction-grid">
+                            {/* 인기 경매 */}
+                            <div className="auction-section-half">
+                                <h3 className="auction-subsection-title">
+                                    <span className="icon">🔥</span>
+                                    인기 경매
+                                    <span className="subtitle">입찰이 활발한 경매</span>
+                                    {popularLastUpdated && (
+                                        <span className="last-updated">{formatLastUpdated(popularLastUpdated)}</span>
+                                    )}
+                                </h3>
+                                <div className="auctions-grid-compact">
+                                    {popularAuctions.length > 0 ? 
+                                        popularAuctions.slice(0, 4).map(auction => renderAuctionCardWithDetails(auction)) : 
+                                        <div className="no-auctions">현재 진행 중인 인기 경매가 없습니다.</div>
+                                    }
+                                </div>
+                            </div>
+
+                            {/* 마감임박 경매 */}
+                            <div className="auction-section-half">
+                                <h3 className="auction-subsection-title">
+                                    <span className="icon">⏰</span>
+                                    마감임박 경매
+                                    <span className="subtitle">곧 종료되는 경매</span>
+                                    {closingLastUpdated && (
+                                        <span className="last-updated">{formatLastUpdated(closingLastUpdated)}</span>
+                                    )}
+                                </h3>
+                                <div className="auctions-grid-compact">
+                                    {closingAuctions.length > 0 ? 
+                                        closingAuctions.slice(0, 4).map(auction => renderAuctionCardWithDetails(auction)) : 
+                                        <div className="no-auctions">현재 마감 임박 경매가 없습니다.</div>
+                                    }
+                                </div>
+                            </div>
                         </div>
                     )}
                     <div className="view-all-button">
@@ -406,6 +482,84 @@ const LandingPage = () => {
                             <div className="safety-icon">⭐</div>
                             <h3>신뢰도 시스템</h3>
                             <p>거래 기록과 평가를 통한 신뢰할 수 있는 거래</p>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            {/* 통합 서비스 섹션 - 거래방식과 커뮤니티 */}
+            <section className="services-section">
+                <div className="container">
+                    <h2 className="section-title">NEBULAZONE 서비스</h2>
+                    <div className="services-grid">
+                        {/* 거래 방식 */}
+                        <div className="service-group">
+                            <h3 className="service-group-title">
+                                <span className="service-icon">🛒</span>
+                                거래 방식
+                            </h3>
+                            <div className="service-cards">
+                                <div className="service-card auction-type">
+                                    <div className="service-card-icon">⚡</div>
+                                    <div className="service-card-content">
+                                        <h4>경매</h4>
+                                        <p>실시간 입찰로 최적 가격</p>
+                                        <button onClick={() => navigate('/products/auction')}>
+                                            경매 참여 →
+                                        </button>
+                                    </div>
+                                </div>
+                                <div className="service-card instant-type">
+                                    <div className="service-card-icon">🛍️</div>
+                                    <div className="service-card-content">
+                                        <h4>즉시 구매</h4>
+                                        <p>고정 가격으로 바로 구매</p>
+                                        <button onClick={() => navigate('/products/direct')}>
+                                            상품 보기 →
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* 커뮤니티 */}
+                        <div className="service-group">
+                            <h3 className="service-group-title">
+                                <span className="service-icon">💬</span>
+                                커뮤니티
+                            </h3>
+                            <div className="service-cards">
+                                <div className="service-card community-type">
+                                    <div className="service-card-icon">📝</div>
+                                    <div className="service-card-content">
+                                        <h4>자유게시판</h4>
+                                        <p>자유로운 소통과 정보 공유</p>
+                                        <button onClick={() => navigate('/posts?type=FREE')}>
+                                            게시판 →
+                                        </button>
+                                    </div>
+                                </div>
+                                <div className="service-card qna-type">
+                                    <div className="service-card-icon">❓</div>
+                                    <div className="service-card-content">
+                                        <h4>질문/답변</h4>
+                                        <p>궁금한 점을 물어보세요</p>
+                                        <button onClick={() => navigate('/posts?type=QNA')}>
+                                            질문하기 →
+                                        </button>
+                                    </div>
+                                </div>
+                                <div className="service-card review-type">
+                                    <div className="service-card-icon">⭐</div>
+                                    <div className="service-card-content">
+                                        <h4>거래후기</h4>
+                                        <p>거래 경험과 후기 공유</p>
+                                        <button onClick={() => navigate('/posts?type=REVIEW')}>
+                                            후기 보기 →
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
                         </div>
                     </div>
                 </div>

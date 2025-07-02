@@ -9,11 +9,15 @@ const PointInfo = ({ user }) => {
     };
 
     const handleChargePoint = () => {
-        navigate('/point/charge');
+        navigate('/points');
     };
 
     const handlePointHistory = () => {
         navigate('/transactions');
+    };
+
+    const handleBidHistory = () => {
+        navigate('/my-bids');
     };
 
     return (
@@ -71,18 +75,18 @@ const PointInfo = ({ user }) => {
             </div>
 
             <div style={{
-                display: 'flex',
-                gap: '12px'
+                display: 'grid',
+                gridTemplateColumns: '1fr 1fr 1fr',
+                gap: '8px'
             }}>
                 <button
                     onClick={handleChargePoint}
                     style={{
-                        flex: 1,
                         backgroundColor: '#38d39f',
                         color: '#fff',
                         border: 'none',
                         borderRadius: '8px',
-                        padding: '12px 16px',
+                        padding: '12px 8px',
                         fontSize: '14px',
                         fontWeight: '600',
                         cursor: 'pointer',
@@ -95,17 +99,16 @@ const PointInfo = ({ user }) => {
                         e.target.style.backgroundColor = '#38d39f';
                     }}
                 >
-                    포인트 충전
+                    포인트 관리
                 </button>
                 <button
                     onClick={handlePointHistory}
                     style={{
-                        flex: 1,
                         backgroundColor: '#fff',
                         color: '#4a5568',
                         border: '1px solid #e2e8f0',
                         borderRadius: '8px',
-                        padding: '12px 16px',
+                        padding: '12px 8px',
                         fontSize: '14px',
                         fontWeight: '600',
                         cursor: 'pointer',
@@ -121,6 +124,30 @@ const PointInfo = ({ user }) => {
                     }}
                 >
                     거래 내역
+                </button>
+                <button
+                    onClick={handleBidHistory}
+                    style={{
+                        backgroundColor: '#fff',
+                        color: '#4a5568',
+                        border: '1px solid #e2e8f0',
+                        borderRadius: '8px',
+                        padding: '12px 8px',
+                        fontSize: '14px',
+                        fontWeight: '600',
+                        cursor: 'pointer',
+                        transition: 'all 0.2s ease'
+                    }}
+                    onMouseEnter={(e) => {
+                        e.target.style.backgroundColor = '#f7fafc';
+                        e.target.style.borderColor = '#cbd5e0';
+                    }}
+                    onMouseLeave={(e) => {
+                        e.target.style.backgroundColor = '#fff';
+                        e.target.style.borderColor = '#e2e8f0';
+                    }}
+                >
+                    입찰 내역
                 </button>
             </div>
         </div>

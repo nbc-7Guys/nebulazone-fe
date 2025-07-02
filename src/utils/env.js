@@ -4,6 +4,8 @@ export const ENV = {
     // API 관련
     API_BASE_URL: import.meta.env.VITE_API_BASE_URL || 
                   (import.meta.env.MODE === 'production' ? '/api' : 'http://localhost:8080'),
+
+    API_OAUTH_BASE_URL: import.meta.env.VITE_API_OAUTH_BASE_URL,
     
     // 환경 정보
     NODE_ENV: import.meta.env.MODE,

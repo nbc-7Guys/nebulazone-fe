@@ -7,6 +7,7 @@ import {userApi} from "../services/api";
 import {JwtManager} from "../services/managers/index.js";
 import {ErrorHandler, ToastManager} from "../utils/error/errorHandler";
 import {AccountSettings, AddressEditor, PasswordEditor, ProfileHeader, ProfileInfoEditor, PointInfo} from "../components/profile";
+import {isAdmin} from "../utils/auth/auth";
 
 export default function MyPage() {
     const navigate = useNavigate();
@@ -292,6 +293,122 @@ export default function MyPage() {
                 />
 
                 <PointInfo user={user} />
+
+                {/* 관리자 전용 메뉴 */}
+                {isAdmin() && (
+                    <div style={{
+                        backgroundColor: '#fff',
+                        border: '1px solid #fed7d7',
+                        borderRadius: '12px',
+                        padding: '24px',
+                        marginBottom: '24px',
+                        background: 'linear-gradient(135deg, #fff5f5, #fef5e7)'
+                    }}>
+                        <div style={{
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'space-between',
+                            marginBottom: '16px'
+                        }}>
+                            <h3 style={{
+                                fontSize: '18px',
+                                fontWeight: '600',
+                                color: '#e53e3e',
+                                margin: 0,
+                                display: 'flex',
+                                alignItems: 'center',
+                                gap: '8px'
+                            }}>
+                                🛠️ 관리자 메뉴
+                            </h3>
+                        </div>
+
+                        <div style={{
+                            backgroundColor: '#fff',
+                            borderRadius: '8px',
+                            padding: '20px',
+                            border: '1px solid #fed7d7'
+                        }}>
+                            <div style={{
+                                display: 'flex',
+                                flexDirection: 'column',
+                                gap: '12px'
+                            }}>
+                                <button
+                                    onClick={() => navigate('/nebulazone-admin')}
+                                    style={{
+                                        display: 'flex',
+                                        alignItems: 'center',
+                                        gap: '12px',
+                                        padding: '16px',
+                                        backgroundColor: '#fff5f5',
+                                        border: '2px solid #feb2b2',
+                                        borderRadius: '8px',
+                                        cursor: 'pointer',
+                                        transition: 'all 0.2s ease',
+                                        fontSize: '16px',
+                                        fontWeight: '600',
+                                        color: '#e53e3e'
+                                    }}
+                                    onMouseEnter={(e) => {
+                                        e.target.style.backgroundColor = '#fed7d7';
+                                        e.target.style.transform = 'translateY(-2px)';
+                                        e.target.style.boxShadow = '0 4px 12px rgba(229, 62, 62, 0.2)';
+                                    }}
+                                    onMouseLeave={(e) => {
+                                        e.target.style.backgroundColor = '#fff5f5';
+                                        e.target.style.transform = 'translateY(0)';
+                                        e.target.style.boxShadow = 'none';
+                                    }}
+                                >
+                                    <span style={{ fontSize: '20px' }}>🏠</span>
+                                    <div style={{ textAlign: 'left', flex: 1 }}>
+                                        <div style={{ fontSize: '16px', fontWeight: '600' }}>관리자 대시보드</div>
+                                        <div style={{ fontSize: '14px', color: '#9c4221', marginTop: '2px' }}>
+                                            포인트 관리 및 시스템 관리
+                                        </div>
+                                    </div>
+                                    <span style={{ fontSize: '14px', color: '#9c4221' }}>→</span>
+                                </button>
+
+                                <button
+                                    onClick={() => navigate('/nebulazone-admin/points')}
+                                    style={{
+                                        display: 'flex',
+                                        alignItems: 'center',
+                                        gap: '12px',
+                                        padding: '16px',
+                                        backgroundColor: '#fff',
+                                        border: '1px solid #fed7d7',
+                                        borderRadius: '8px',
+                                        cursor: 'pointer',
+                                        transition: 'all 0.2s ease',
+                                        fontSize: '16px',
+                                        fontWeight: '500',
+                                        color: '#9c4221'
+                                    }}
+                                    onMouseEnter={(e) => {
+                                        e.target.style.backgroundColor = '#fff5f5';
+                                        e.target.style.borderColor = '#feb2b2';
+                                    }}
+                                    onMouseLeave={(e) => {
+                                        e.target.style.backgroundColor = '#fff';
+                                        e.target.style.borderColor = '#fed7d7';
+                                    }}
+                                >
+                                    <span style={{ fontSize: '20px' }}>💰</span>
+                                    <div style={{ textAlign: 'left', flex: 1 }}>
+                                        <div style={{ fontSize: '16px', fontWeight: '600' }}>포인트 관리</div>
+                                        <div style={{ fontSize: '14px', color: '#9c4221', marginTop: '2px' }}>
+                                            사용자 포인트 요청 승인/거부
+                                        </div>
+                                    </div>
+                                    <span style={{ fontSize: '14px', color: '#9c4221' }}>→</span>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                )}
 
                 <ProfileInfoEditor
                     user={user}

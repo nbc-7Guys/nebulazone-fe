@@ -28,8 +28,7 @@ const auctionApi = {
             const response = await apiRequest(`/auctions/sorted?sort=${sortType}`, {}, false);
             return response;
         } catch (error) {
-            console.error(`${sortType} 타입 경매 조회 오류:`, error);
-            return []; // 오류 발생 시 빈 배열 반환
+            return { auctions: [] }; // 오류 발생 시 빈 auctions 배열 반환
         }
     },
 };
