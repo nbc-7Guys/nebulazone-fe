@@ -5,6 +5,7 @@ import HeaderNav from "../components/layout/HeaderNav";
 import LoadingSpinner from "../components/ui/LoadingSpinner";
 import { useWebSocket } from "../hooks/useWebSocket";
 import { useToastContext } from "../contexts/ToastContext";
+import { JwtManager } from "../services/managers/JwtManager";
 
 export default function AuctionProductDetailPage() {
     const { id } = useParams(); // auctionId
@@ -20,9 +21,35 @@ export default function AuctionProductDetailPage() {
     const [bidPage, setBidPage] = useState(1);
     const [hasMoreBids, setHasMoreBids] = useState(true);
     const [timeLeft, setTimeLeft] = useState("");
+    const [currentUser, setCurrentUser] = useState(null);
+    const [isAuctionOwner, setIsAuctionOwner] = useState(false);
+    const [manualEndLoading, setManualEndLoading] = useState(false);
     
     const { subscribe, unsubscribe, isConnected } = useWebSocket();
     const { showToast } = useToastContext();
+
+    // 사용자 정보 확인
+    useEffect(() => {
+        const token = JwtManager.getJwt();
+        const userInfo = JwtManager.getUserInfo();
+        
+        // 토큰이 있는데 사용자 정보가 없으면 토큰에서 추출
+        if (token && !userInfo) {
+            try {
+                const payload = JSON.parse(atob(token.split('.')[1]));
+                const tempUser = {
+                    id: payload.sub || payload.userId || payload.id,
+                    nickname: payload.nickname || '사용자',
+                    email: payload.email
+                };
+                setCurrentUser(tempUser);
+            } catch (error) {
+                setCurrentUser(userInfo);
+            }
+        } else {
+            setCurrentUser(userInfo);
+        }
+    }, []);
 
     const fetchAuction = useCallback(async () => {
         if (!id) return;
@@ -31,7 +58,6 @@ export default function AuctionProductDetailPage() {
         setErrorMsg("");
         try {
             const data = await auctionApi.getAuction(id);
-            console.log('경매 데이터:', data);
             setAuction(data);
         } catch (error) {
             console.error(error);
@@ -40,19 +66,34 @@ export default function AuctionProductDetailPage() {
             setLoading(false);
         }
     }, [id]);
+
+    // 경매 소유자 확인 (별도 useEffect)
+    useEffect(() => {
+        if (auction && currentUser) {
+            // 여러 필드로 소유자 확인 (백엔드 응답에 따라 다를 수 있음)
+            const isOwner = auction.sellerId === currentUser.id || 
+                           auction.sellerUserId === currentUser.id ||
+                           auction.userId === currentUser.id;
+            console.log('소유자 확인:', {
+                sellerId: auction.sellerId,
+                sellerUserId: auction.sellerUserId,
+                userId: auction.userId,
+                currentUserId: currentUser.id,
+                isOwner
+            });
+            setIsAuctionOwner(isOwner);
+        }
+    }, [auction, currentUser]);
     
     const fetchBids = useCallback(async (page = 1, reset = false) => {
         try {
             const response = await bidApi.getAuctionBids(id, page, 5);
-            console.log('입찰 내역 응답:', response);
             
             let bidData = [];
             if (response.content) {
-                console.log('입찰 데이터:', response.content);
                 bidData = response.content;
                 setHasMoreBids(!response.last);
             } else if (Array.isArray(response)) {
-                console.log('입찰 배열 데이터:', response);
                 bidData = response;
                 setHasMoreBids(false);
             }
@@ -123,9 +164,7 @@ export default function AuctionProductDetailPage() {
         
         setBidLoading(true);
         try {
-            console.log('입찰 API 호출:', { auctionId: id, price: currentBidPrice });
             const response = await bidApi.createBid(id, { price: currentBidPrice });
-            console.log('입찰 응답:', response);
             showToast('입찰이 완료되었습니다.', 'success');
             setBidPrice('');
             setBidPriceDisplay('');
@@ -137,13 +176,96 @@ export default function AuctionProductDetailPage() {
             setBidLoading(false);
         }
     };
+
+    // 수동 낙찰 함수
+    const handleManualEnd = async () => {
+        if (!bids.length) {
+            showToast('입찰이 없어 수동 낙찰할 수 없습니다.', 'error');
+            return;
+        }
+
+        // 활성화된 입찰 중 최고가 찾기
+        const activeBids = bids.filter(bid => (bid.status || bid.bidStatus) === 'BID');
+        if (!activeBids.length) {
+            showToast('활성화된 입찰이 없어 수동 낙찰할 수 없습니다.', 'error');
+            return;
+        }
+
+        const highestBid = activeBids[0]; // 첫 번째가 최고 입찰 (정렬되어 있음)
+        const bidPrice = highestBid.price || highestBid.bidPrice || 0;
+        const bidderNickname = highestBid.bidderNickname || highestBid.userNickname || '익명';
+        
+        const confirmMessage = `${bidderNickname}님의 ${bidPrice.toLocaleString()}원 입찰로 수동 낙찰하시겠습니까?\n\n이 작업은 되돌릴 수 없습니다.`;
+        
+        if (!window.confirm(confirmMessage)) {
+            return;
+        }
+
+        setManualEndLoading(true);
+        try {
+            const response = await auctionApi.endAuction(id, {
+                bidPrice: bidPrice,
+                bidUserId: highestBid.bidderUserId || highestBid.userId
+            });
+            showToast(`🎉 수동 낙찰 완료!\n낙찰자: ${bidderNickname}\n낙찰가: ${bidPrice.toLocaleString()}원`, 'success');
+            // 페이지 새로고침으로 상태 업데이트
+            fetchAuction();
+        } catch (error) {
+            console.error('수동 낙찰 오류:', error);
+            showToast(error.message || '수동 낙찰에 실패했습니다.', 'error');
+        } finally {
+            setManualEndLoading(false);
+        }
+    };
+
+    // 경매 취소 함수
+    const handleCancelAuction = async () => {
+        const confirmMessage = '경매를 취소하시겠습니까?\n모든 입찰자에게 포인트가 반환됩니다.';
+        
+        if (!window.confirm(confirmMessage)) {
+            return;
+        }
+
+        setManualEndLoading(true);
+        try {
+            const response = await auctionApi.deleteAuction(id);
+            showToast('경매가 취소되었습니다.', 'success');
+            // 메인 페이지로 이동
+            navigate('/');
+        } catch (error) {
+            console.error('경매 취소 오류:', error);
+            showToast(error.message || '경매 취소에 실패했습니다.', 'error');
+        } finally {
+            setManualEndLoading(false);
+        }
+    };
+
+    // 입찰 취소 함수
+    const handleCancelBid = async (bid) => {
+        const bidPrice = bid.price || bid.bidPrice;
+        const confirmMessage = `${bidPrice.toLocaleString()}원 입찰을 취소하시겠습니까?`;
+        
+        if (!window.confirm(confirmMessage)) {
+            return;
+        }
+
+        try {
+            const response = await bidApi.deleteBid(id, bidPrice);
+            showToast('입찰이 취소되었습니다.', 'success');
+            // 입찰 목록 새로고침
+            fetchBids(1, true);
+            fetchAuction(); // 현재가 업데이트를 위해
+        } catch (error) {
+            console.error('입찰 취소 오류:', error);
+            showToast(error.message || '입찰 취소에 실패했습니다.', 'error');
+        }
+    };
     
     // WebSocket 구독 설정
     useEffect(() => {
         if (!isConnected() || !id) return;
         
         const handleBidUpdate = (message) => {
-            console.log('입찰 업데이트 수신:', message);
             try {
                 const bidUpdate = JSON.parse(message.body);
                 // 실시간 경매 현재가 및 입찰 수 업데이트
@@ -160,7 +282,6 @@ export default function AuctionProductDetailPage() {
         };
         
         const handleWonUpdate = (message) => {
-            console.log('낙찰 업데이트 수신:', message);
             try {
                 const wonUpdate = JSON.parse(message.body);
                 const finalPrice = wonUpdate.finalPrice || wonUpdate.currentPrice || wonUpdate.price;
@@ -175,13 +296,34 @@ export default function AuctionProductDetailPage() {
             }
         };
         
+        const handleFailedUpdate = (message) => {
+            try {
+                const failedUpdate = JSON.parse(message.body);
+                const currentPrice = failedUpdate.wonBidPrice || failedUpdate.currentPrice || failedUpdate.finalPrice || 0;
+                
+                setAuction(prev => ({
+                    ...prev,
+                    isFailed: true,
+                    currentPrice: currentPrice,
+                    endTime: new Date().toISOString() // 현재 시간으로 종료 시간 업데이트
+                }));
+                
+                // currentPrice가 0이면 입찰이 없었던 것
+                const toastMessage = currentPrice === 0 
+                    ? '입찰이 없어 유찰되었습니다.' 
+                    : '경매가 유찰되었습니다.';
+                showToast(`😔 ${toastMessage}`, 'warning');
+            } catch (error) {
+                console.error('유찰 업데이트 처리 오류:', error);
+            }
+        };
+        
         // 구독 설정
         const setupSubscriptions = async () => {
             try {
-                console.log(`경매 ${id} WebSocket 구독 시작`);
                 await subscribe(`/topic/auction/${id}/bid`, handleBidUpdate);
                 await subscribe(`/topic/auction/${id}/won`, handleWonUpdate);
-                console.log(`경매 ${id} WebSocket 구독 완료`);
+                await subscribe(`/topic/auction/${id}/failed`, handleFailedUpdate);
             } catch (error) {
                 console.error('WebSocket 구독 설정 실패:', error);
             }
@@ -190,9 +332,9 @@ export default function AuctionProductDetailPage() {
         setupSubscriptions();
         
         return () => {
-            console.log(`경매 ${id} WebSocket 구독 해제`);
             unsubscribe(`/topic/auction/${id}/bid`);
             unsubscribe(`/topic/auction/${id}/won`);
+            unsubscribe(`/topic/auction/${id}/failed`);
         };
     }, [isConnected, id, fetchBids, showToast, subscribe, unsubscribe]);
     
@@ -303,14 +445,14 @@ export default function AuctionProductDetailPage() {
                 <div style={{
                     display: "inline-block",
                     padding: "6px 12px",
-                    backgroundColor: auction.isWon ? "#28a745" : new Date(auction.endTime) < new Date() ? "#dc3545" : "#7f56fd",
+                    backgroundColor: auction.isWon ? "#28a745" : auction.isFailed ? "#6c757d" : new Date(auction.endTime) < new Date() ? "#dc3545" : "#7f56fd",
                     color: "white",
                     borderRadius: "20px",
                     fontSize: "12px",
                     fontWeight: "bold",
                     marginBottom: "12px"
                 }}>
-                    {auction.isWon ? "낙찰 완료" : new Date(auction.endTime) < new Date() ? "경매 종료" : "경매 진행중"}
+                    {auction.isWon ? "낙찰 완료" : auction.isFailed ? "유찰" : new Date(auction.endTime) < new Date() ? "경매 종료" : "경매 진행중"}
                 </div>
 
                 {/* 이미지 렌더링 */}
@@ -541,39 +683,225 @@ export default function AuctionProductDetailPage() {
                     </div>
                 </div>
 
+                {/* 디버깅 정보 (개발용) */}
+                <div style={{ 
+                    marginTop: 20, 
+                    padding: 16, 
+                    backgroundColor: '#f0f9ff', 
+                    borderRadius: 8,
+                    fontSize: 12,
+                    fontFamily: 'monospace'
+                }}>
+                    <div><strong>🔍 디버깅 정보:</strong></div>
+                    <div>currentUser: {currentUser ? `${currentUser.nickname}(${currentUser.id})` : 'null'}</div>
+                    <div>auction.sellerId: {auction.sellerId || 'null'}</div>
+                    <div>auction.sellerUserId: {auction.sellerUserId || 'null'}</div>
+                    <div>isAuctionOwner: {isAuctionOwner ? 'true' : 'false'}</div>
+                    <div>isAuctionEnded: {isAuctionEnded ? 'true' : 'false'}</div>
+                    <div>bids.length: {bids.length}</div>
+                </div>
+                
                 {/* 종료된 경매 안내 */}
-                {auction && (auction.isWon || new Date(auction.endTime) < new Date()) && (
+                {auction && (auction.isWon || auction.isFailed || new Date(auction.endTime) < new Date()) && (
                     <div style={{ 
                         marginTop: 36, 
                         padding: 20, 
-                        backgroundColor: auction.isWon ? "#d4edda" : "#f8d7da", 
+                        backgroundColor: auction.isWon ? "#d4edda" : auction.isFailed ? "#e2e3e5" : "#f8d7da", 
                         borderRadius: 8,
-                        border: `1px solid ${auction.isWon ? "#c3e6cb" : "#f5c6cb"}`,
+                        border: `1px solid ${auction.isWon ? "#c3e6cb" : auction.isFailed ? "#d1ecf1" : "#f5c6cb"}`,
                         textAlign: "center"
                     }}>
                         <h3 style={{ 
                             margin: "0 0 8px 0", 
                             fontSize: 18, 
                             fontWeight: 600,
-                            color: auction.isWon ? "#155724" : "#721c24"
+                            color: auction.isWon ? "#155724" : auction.isFailed ? "#0c5460" : "#721c24"
                         }}>
-                            {auction.isWon ? "🎉 낙찰 완료!" : "⏰ 경매 종료"}
+                            {auction.isWon ? "🎉 낙찰 완료!" : auction.isFailed ? "😔 유찰" : "⏰ 경매 종료"}
                         </h3>
                         <p style={{ 
                             margin: 0, 
                             fontSize: 14, 
-                            color: auction.isWon ? "#155724" : "#721c24"
+                            color: auction.isWon ? "#155724" : auction.isFailed ? "#0c5460" : "#721c24"
                         }}>
                             {auction.isWon 
                                 ? `최종 낙찰가: ${auction.currentPrice ? auction.currentPrice.toLocaleString() : '정보 없음'}원`
-                                : "경매 시간이 종료되었습니다."
+                                : auction.isFailed 
+                                    ? (auction.currentPrice === 0 ? "입찰이 없어 유찰되었습니다." : "경매가 유찰되었습니다.")
+                                    : "경매 시간이 종료되었습니다."
                             }
                         </p>
                     </div>
                 )}
 
-                {/* 입찰 섹션 */}
-                {auction && !auction.isWon && new Date(auction.endTime) >= new Date() && (
+                {/* 경매 소유자용 수동 낙찰 섹션 */}
+                {auction && !auction.isWon && new Date(auction.endTime) >= new Date() && isAuctionOwner && bids.length > 0 && (
+                    <div style={{ marginTop: 36, padding: 20, backgroundColor: "#fff3cd", borderRadius: 8, border: "2px solid #ffeaa7" }}>
+                        <h3 style={{ margin: "0 0 16px 0", fontSize: 18, fontWeight: 600, color: "#856404" }}>
+                            🏆 수동 낙찰
+                        </h3>
+                        <div style={{ 
+                            padding: "16px", 
+                            backgroundColor: "#ffffff", 
+                            borderRadius: 8, 
+                            marginBottom: 16,
+                            border: "1px solid #ffeaa7"
+                        }}>
+                            <div style={{ fontSize: 14, color: "#856404", marginBottom: 8 }}>
+                                현재 최고 입찰가
+                            </div>
+                            <div style={{ fontSize: 20, fontWeight: 700, color: "#b8860b" }}>
+                                {bids.length > 0 ? `${(bids[0].price || bids[0].bidPrice || 0).toLocaleString()}원` : '입찰 없음'}
+                            </div>
+                            {bids.length > 0 && (
+                                <div style={{ fontSize: 12, color: "#856404", marginTop: 4 }}>
+                                    입찰자: {bids[0].bidderNickname || bids[0].userNickname || '익명'}
+                                </div>
+                            )}
+                        </div>
+                        <div style={{ display: "flex", gap: 12 }}>
+                            <button
+                                onClick={handleManualEnd}
+                                disabled={manualEndLoading || bids.length === 0}
+                                style={{
+                                    flex: 2,
+                                    padding: "16px",
+                                    background: manualEndLoading ? "#ccc" : "linear-gradient(135deg, #f39c12 0%, #e67e22 100%)",
+                                    color: "white",
+                                    border: "none",
+                                    borderRadius: 8,
+                                    fontSize: 16,
+                                    fontWeight: 600,
+                                    cursor: manualEndLoading ? "not-allowed" : "pointer",
+                                    boxShadow: "0 4px 12px rgba(243, 156, 18, 0.3)",
+                                    transition: "all 0.2s ease"
+                                }}
+                                onMouseOver={(e) => {
+                                    if (!manualEndLoading && bids.length > 0) {
+                                        e.target.style.transform = "translateY(-2px)";
+                                        e.target.style.boxShadow = "0 6px 16px rgba(243, 156, 18, 0.4)";
+                                    }
+                                }}
+                                onMouseOut={(e) => {
+                                    if (!manualEndLoading) {
+                                        e.target.style.transform = "translateY(0)";
+                                        e.target.style.boxShadow = "0 4px 12px rgba(243, 156, 18, 0.3)";
+                                    }
+                                }}
+                            >
+                                {manualEndLoading ? "처리 중..." : "🏆 수동 낙찰"}
+                            </button>
+                            
+                            <button
+                                onClick={handleCancelAuction}
+                                disabled={manualEndLoading}
+                                style={{
+                                    flex: 1,
+                                    padding: "16px",
+                                    background: manualEndLoading ? "#ccc" : "linear-gradient(135deg, #e74c3c 0%, #c0392b 100%)",
+                                    color: "white",
+                                    border: "none",
+                                    borderRadius: 8,
+                                    fontSize: 14,
+                                    fontWeight: 600,
+                                    cursor: manualEndLoading ? "not-allowed" : "pointer",
+                                    boxShadow: "0 4px 12px rgba(231, 76, 60, 0.3)",
+                                    transition: "all 0.2s ease"
+                                }}
+                                onMouseOver={(e) => {
+                                    if (!manualEndLoading) {
+                                        e.target.style.transform = "translateY(-2px)";
+                                        e.target.style.boxShadow = "0 6px 16px rgba(231, 76, 60, 0.4)";
+                                    }
+                                }}
+                                onMouseOut={(e) => {
+                                    if (!manualEndLoading) {
+                                        e.target.style.transform = "translateY(0)";
+                                        e.target.style.boxShadow = "0 4px 12px rgba(231, 76, 60, 0.3)";
+                                    }
+                                }}
+                            >
+                                ❌ 경매 취소
+                            </button>
+                        </div>
+                    </div>
+                )}
+
+                {/* 경매 소유자용 입찰 대기 메시지 */}
+                {auction && !auction.isWon && new Date(auction.endTime) >= new Date() && isAuctionOwner && bids.length === 0 && (
+                    <div style={{ marginTop: 36, padding: 20, backgroundColor: "#e3f2fd", borderRadius: 8, border: "2px solid #90caf9" }}>
+                        <div style={{ textAlign: "center", marginBottom: 16 }}>
+                            <h3 style={{ margin: "0 0 8px 0", fontSize: 18, fontWeight: 600, color: "#1565c0" }}>
+                                📢 내 경매
+                            </h3>
+                            <p style={{ margin: 0, fontSize: 14, color: "#1976d2" }}>
+                                아직 입찰이 없습니다. 입찰자를 기다리고 있어요! 🕒
+                            </p>
+                        </div>
+                        <button
+                            onClick={handleCancelAuction}
+                            disabled={manualEndLoading}
+                            style={{
+                                width: "100%",
+                                padding: "12px",
+                                background: manualEndLoading ? "#ccc" : "linear-gradient(135deg, #e74c3c 0%, #c0392b 100%)",
+                                color: "white",
+                                border: "none",
+                                borderRadius: 8,
+                                fontSize: 14,
+                                fontWeight: 600,
+                                cursor: manualEndLoading ? "not-allowed" : "pointer",
+                                boxShadow: "0 4px 12px rgba(231, 76, 60, 0.3)",
+                                transition: "all 0.2s ease"
+                            }}
+                            onMouseOver={(e) => {
+                                if (!manualEndLoading) {
+                                    e.target.style.transform = "translateY(-2px)";
+                                    e.target.style.boxShadow = "0 6px 16px rgba(231, 76, 60, 0.4)";
+                                }
+                            }}
+                            onMouseOut={(e) => {
+                                if (!manualEndLoading) {
+                                    e.target.style.transform = "translateY(0)";
+                                    e.target.style.boxShadow = "0 4px 12px rgba(231, 76, 60, 0.3)";
+                                }
+                            }}
+                        >
+                            {manualEndLoading ? "처리 중..." : "❌ 경매 취소하기"}
+                        </button>
+                    </div>
+                )}
+
+                {/* 로그인 안한 사용자용 메시지 */}
+                {auction && !auction.isWon && new Date(auction.endTime) >= new Date() && !currentUser && (
+                    <div style={{ marginTop: 36, padding: 20, backgroundColor: "#f8f9fa", borderRadius: 8, textAlign: "center", border: "2px solid #dee2e6" }}>
+                        <h3 style={{ margin: "0 0 8px 0", fontSize: 18, fontWeight: 600, color: "#495057" }}>
+                            🔐 로그인이 필요합니다
+                        </h3>
+                        <p style={{ margin: "0 0 16px 0", fontSize: 14, color: "#6c757d" }}>
+                            입찰하려면 로그인해주세요
+                        </p>
+                        <button
+                            onClick={() => navigate('/login')}
+                            style={{
+                                padding: "12px 24px",
+                                backgroundColor: "#007bff",
+                                color: "white",
+                                border: "none",
+                                borderRadius: 6,
+                                fontSize: 14,
+                                fontWeight: 600,
+                                cursor: "pointer"
+                            }}
+                        >
+                            로그인하러 가기
+                        </button>
+                    </div>
+                )}
+
+
+                {/* 일반 사용자용 입찰 섹션 */}
+                {auction && !auction.isWon && new Date(auction.endTime) >= new Date() && !isAuctionOwner && currentUser && (
                     <div style={{ marginTop: 36, padding: 20, backgroundColor: "#f8f9fa", borderRadius: 8 }}>
                         <h3 style={{ margin: "0 0 16px 0", fontSize: 18, fontWeight: 600 }}>입찰하기</h3>
                         <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 16 }}>
@@ -682,8 +1010,7 @@ export default function AuctionProductDetailPage() {
                             boxShadow: "0 1px 3px rgba(0,0,0,0.1)"
                         }}>
                             {bids.map((bid, index) => {
-                                console.log(`입찰 ${index}:`, bid, 'keys:', Object.keys(bid));
-                                return (
+                                                return (
                                 <div key={index} style={{
                                     padding: "20px 24px",
                                     borderBottom: index < bids.length - 1 ? "1px solid #e2e8f0" : "none",
@@ -750,15 +1077,15 @@ export default function AuctionProductDetailPage() {
                                                         <span style={{
                                                             fontSize: 11,
                                                             padding: "4px 10px",
-                                                            background: "linear-gradient(135deg, #667eea 0%, #764ba2 100%)",
+                                                            background: "linear-gradient(135deg, #f39c12 0%, #e67e22 100%)",
                                                             color: "white",
                                                             borderRadius: 12,
                                                             fontWeight: "600",
                                                             textShadow: "0 1px 2px rgba(0,0,0,0.1)",
-                                                            boxShadow: "0 2px 4px rgba(102, 126, 234, 0.3)",
+                                                            boxShadow: "0 2px 4px rgba(243, 156, 18, 0.3)",
                                                             animation: "pulse 2s infinite"
                                                         }}>
-                                                            ⚡ 최신
+                                                            👑 최고가 (낙찰 대상)
                                                         </span>
                                                     ) : (
                                                         <span style={{
@@ -801,7 +1128,7 @@ export default function AuctionProductDetailPage() {
                                         display: "flex",
                                         flexDirection: "column",
                                         alignItems: "flex-end",
-                                        gap: 4
+                                        gap: 8
                                     }}>
                                         <div style={{ 
                                             fontSize: 13, 
@@ -827,6 +1154,36 @@ export default function AuctionProductDetailPage() {
                                         }}>
                                             #{bids.length - index}번째 입찰
                                         </div>
+                                        {/* 내 입찰 취소 버튼 */}
+                                        {currentUser && (bid.bidderUserId === currentUser.id || bid.userId === currentUser.id) && 
+                                         (bid.status || bid.bidStatus) === 'BID' && 
+                                         !auction.isWon && new Date(auction.endTime) >= new Date() && (
+                                            <button
+                                                onClick={() => handleCancelBid(bid)}
+                                                style={{
+                                                    padding: "6px 12px",
+                                                    background: "linear-gradient(135deg, #f56565 0%, #e53e3e 100%)",
+                                                    color: "white",
+                                                    border: "none",
+                                                    borderRadius: 6,
+                                                    fontSize: 11,
+                                                    fontWeight: 600,
+                                                    cursor: "pointer",
+                                                    boxShadow: "0 2px 6px rgba(245, 101, 101, 0.3)",
+                                                    transition: "all 0.2s ease"
+                                                }}
+                                                onMouseOver={(e) => {
+                                                    e.target.style.transform = "translateY(-1px)";
+                                                    e.target.style.boxShadow = "0 4px 10px rgba(245, 101, 101, 0.4)";
+                                                }}
+                                                onMouseOut={(e) => {
+                                                    e.target.style.transform = "translateY(0)";
+                                                    e.target.style.boxShadow = "0 2px 6px rgba(245, 101, 101, 0.3)";
+                                                }}
+                                            >
+                                                취소
+                                            </button>
+                                        )}
                                     </div>
                                 </div>
                                 );
