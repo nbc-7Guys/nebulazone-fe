@@ -155,6 +155,8 @@ function WebSocketProvider({ children }) {
 import AdminPointManagementPage from "./pages/AdminPointManagementPage";
 import PointManagementPage from "./pages/PointManagementPage";
 import OAuthRedirectPage from "./pages/OAuthRedirectPage";
+import AdminBanCreatePage from "./pages/AdminBanCreatePage";
+import AdminBanManagementPage from "./pages/AdminBanManagementPage";
 
 function App() {
     
@@ -238,6 +240,16 @@ function App() {
                                 <Route path="/admin/points" element={
                                     <PrivateRoute>
                                         <AdminPointManagementPage />
+                                    </PrivateRoute>
+                                } />
+                                <Route path="/admin/ban" element={
+                                    <PrivateRoute>
+                                        <AdminBanManagementPage />
+                                    </PrivateRoute>
+                                } />
+                                <Route path="/admin/ban/create" element={
+                                    <PrivateRoute>
+                                        <AdminBanCreatePage />
                                     </PrivateRoute>
                                 } />
 

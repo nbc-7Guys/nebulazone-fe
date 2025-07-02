@@ -21,3 +21,4 @@ export { transactionApi } from './transactions';
 export { pointApi } from './points';
 export { notificationApi } from './notifications';
 export { reviewApi } from './reviews';
+export { banUser } from './bans';
