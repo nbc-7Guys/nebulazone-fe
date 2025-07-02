@@ -2,6 +2,7 @@ import React from 'react';
 import { Routes, Route } from 'react-router-dom';
 import UserRoutes from './UserRoutes';
 import AdminRoutes from './AdminRoutes';
+import AdminDashboard from '../pages/AdminDashboard';
 import AdminRoute from '../components/common/AdminRoute';
 
 /**
@@ -16,6 +17,16 @@ export const ADMIN_PATH = '/admin';
 const GlobalRoutes = () => {
     return (
         <Routes>
+            {/* 관리자 대시보드 진입점 */}
+            <Route
+                path="/nebulazone-admin"
+                element={
+                    <AdminRoute>
+                        <AdminDashboard />
+                    </AdminRoute>
+                }
+            />
+
             {/* 관리자 전용 라우트 */}
             <Route
                 path={`${ADMIN_PATH}/*`}
