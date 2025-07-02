@@ -209,15 +209,14 @@ export default function ProductCreatePage() {
                         if (formData.type === 'DIRECT') {
                             navigate(`/products/direct/${response.productId}?catalogId=${selectedCatalog.catalogId}`);
                         } else {
-                            // 경매 상품의 경우 auctionId를 사용해야 함
+                            // 경매 상품의 경우 auctionId 확인
                             console.log('🔍 경매 상품 생성 응답 (이미지 실패):', JSON.stringify(response, null, 2));
-                            const auctionId = response.auctionId || response.productId;
                             
-                            if (auctionId) {
-                                navigate(`/products/auction/${auctionId}`);
+                            if (response.auctionId) {
+                                navigate(`/products/auction/${response.auctionId}`);
                             } else {
-                                console.error('❌ 이미지 실패 시에도 auctionId 없음!');
-                                navigate('/');
+                                console.log('⚠️ auctionId가 없어서 경매 전체 조회 페이지로 이동');
+                                navigate('/products/auction');
                             }
                         }
                     }, 2500);  // 2.5초 후 자동 이동
@@ -245,17 +244,12 @@ export default function ProductCreatePage() {
                     console.log('🔍 auctionId 확인:', response.auctionId);
                     console.log('🔍 productId 확인:', response.productId);
                     
-                    const auctionId = response.auctionId || response.productId;
-                    const targetUrl = `/products/auction/${auctionId}`;
-                    
-                    console.log('🔍 리다이렉트 URL:', targetUrl);
-                    
-                    if (auctionId) {
-                        navigate(targetUrl);
+                    if (response.auctionId) { // auctionId가 있을 경우에만 상세 페이지로 이동
+                        navigate(`/products/auction/${response.auctionId}`);
                     } else {
-                        console.error('❌ auctionId와 productId 모두 없음!');
-                        // 일단 메인으로 이동
-                        navigate('/');
+                        console.error('❌ 경매 상품 등록 후 auctionId가 반환되지 않았습니다. 경매 전체 조회 페이지로 이동합니다.');
+                        // auctionId가 없으면 경매 전체 조회 페이지로 리다이렉트
+                        navigate('/products/auction');
                     }
                 }
             }, 1500); // 1.5초 후 이동

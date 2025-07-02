@@ -364,6 +364,7 @@ export default function ProductListPage() {
                                         price: product.productPrice,
                                         image: product.productImages?.[0] || '/placeholder-image.jpg',
                                         category: product.txMethod === 'AUCTION' ? '경매' : '직거래',
+                                        isSold: product.isSold,
                                         catalogId: product.catalogId,
                                         createdAt: product.createdAt,
                                         // 경매일 때 시작가 표시를 위한 정보 추가

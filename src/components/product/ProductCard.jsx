@@ -20,6 +20,39 @@ export default function ProductCard({ product, onClick }) {
         return price.toLocaleString() + "원";
     };
 
+    // 판매/낙찰 상태 확인
+    const getSaleStatus = () => {
+        const isAuction = product.isAuction || product.category === "경매" || product.priceLabel === "시작가";
+        
+        if (product.isSold) {
+            return {
+                text: isAuction ? "낙찰완료" : "판매완료",
+                color: isAuction ? "#f56565" : "#38d39f",
+                bgColor: isAuction ? "#fed7d7" : "#c6f6d5"
+            };
+        }
+        
+        if (isAuction && product.isWon) {
+            return {
+                text: "낙찰완료",
+                color: "#f56565",
+                bgColor: "#fed7d7"
+            };
+        }
+        
+        if (isAuction && product.isFailed) {
+            return {
+                text: "유찰",
+                color: "#a0aec0",
+                bgColor: "#f7fafc"
+            };
+        }
+        
+        return null;
+    };
+
+    const saleStatus = getSaleStatus();
+
     const formatDate = (dateString) => {
         if (!dateString) return "";
         try {
@@ -121,6 +154,42 @@ export default function ProductCard({ product, onClick }) {
                     }}>
                         {product.category}
                     </div>
+                )}
+
+                {/* 판매/낙찰 상태 마크 - 크게 */}
+                {saleStatus && (
+                    <div style={{
+                        position: "absolute",
+                        top: "50%",
+                        left: "50%",
+                        transform: "translate(-50%, -50%)",
+                        backgroundColor: saleStatus.bgColor,
+                        color: saleStatus.color,
+                        padding: "12px 20px",
+                        borderRadius: "20px",
+                        fontSize: "16px",
+                        fontWeight: "700",
+                        border: `2px solid ${saleStatus.color}`,
+                        boxShadow: "0 4px 12px rgba(0,0,0,0.2)",
+                        zIndex: 20,
+                        textAlign: "center",
+                        minWidth: "100px"
+                    }}>
+                        {saleStatus.text}
+                    </div>
+                )}
+
+                {/* 판매/낙찰 시 반투명 오버레이 */}
+                {saleStatus && (
+                    <div style={{
+                        position: "absolute",
+                        top: 0,
+                        left: 0,
+                        width: "100%",
+                        height: "100%",
+                        backgroundColor: "rgba(0,0,0,0.4)",
+                        zIndex: 10
+                    }} />
                 )}
             </div>
 

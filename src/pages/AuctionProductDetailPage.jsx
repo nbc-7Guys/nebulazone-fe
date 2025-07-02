@@ -29,7 +29,7 @@ export default function AuctionProductDetailPage() {
     const [isCancellingBid, setIsCancellingBid] = useState(false);
     
     const { subscribe, unsubscribe, isConnected } = useWebSocket();
-    const { showToast } = useToastContext();
+    const { toast } = useToastContext();
 
     // 사용자 정보 확인
     useEffect(() => {
@@ -189,31 +189,79 @@ export default function AuctionProductDetailPage() {
     };
 
     const handleBid = async () => {
+        // 유효성 검사
+        if (!currentUser) {
+            toast.error('로그인이 필요합니다.');
+            return;
+        }
+        
+        if (isAuctionOwner) {
+            toast.error('본인의 경매에는 입찰할 수 없습니다.');
+            return;
+        }
+        
+        if (!auction || auction.isWon || new Date(auction.endTime) < new Date()) {
+            toast.error('종료된 경매에는 입찰할 수 없습니다.');
+            return;
+        }
+        
         const currentBidPrice = parseInt(bidPrice);
         const minBidPrice = auction.currentPrice ? auction.currentPrice + 1000 : auction.startPrice;
         
-        console.log('입찰 시도:', {
-            bidPrice: currentBidPrice,
-            minBidPrice,
-            currentPrice: auction.currentPrice,
-            startPrice: auction.startPrice
-        });
-        
         if (!bidPrice || isNaN(currentBidPrice) || currentBidPrice < minBidPrice) {
-            showToast(`최소 입찰가는 ${minBidPrice.toLocaleString()}원입니다.`, 'error');
+            toast.error(`최소 입찰가는 ${minBidPrice.toLocaleString()}원입니다.`);
             return;
         }
         
         setBidLoading(true);
+        
         try {
+            toast.info('입찰 처리 중입니다...');
+            
             const response = await bidApi.createBid(id, { price: currentBidPrice });
-            showToast('입찰이 완료되었습니다.', 'success');
+            toast.success(`입찰이 성공적으로 완료되었습니다! (${currentBidPrice.toLocaleString()}원)`);
             setBidPrice('');
             setBidPriceDisplay('');
-            // 입찰 후 데이터 갱신은 WebSocket으로 처리
+            
         } catch (error) {
             console.error('입찰 오류:', error);
-            showToast(error.message || '입찰에 실패했습니다.', 'error');
+            
+            let errorMessage = '입찰에 실패했습니다.';
+            
+            if (error.response) {
+                const status = error.response.status;
+                switch (status) {
+                    case 400:
+                        errorMessage = '잘못된 입찰 금액입니다. 최소 입찰가를 확인해주세요.';
+                        break;
+                    case 401:
+                        errorMessage = '로그인이 필요합니다.';
+                        break;
+                    case 403:
+                        errorMessage = '입찰 권한이 없습니다. 본인의 경매에는 입찰할 수 없습니다.';
+                        break;
+                    case 404:
+                        errorMessage = '해당 경매를 찾을 수 없습니다.';
+                        break;
+                    case 409:
+                        errorMessage = '이미 종료된 경매이거나 더 높은 입찰이 있습니다.';
+                        break;
+                    case 412:
+                        errorMessage = '포인트가 부족합니다.';
+                        break;
+                    case 500:
+                        errorMessage = '서버 오류가 발생했습니다. 잠시 후 다시 시도해주세요.';
+                        break;
+                    default:
+                        errorMessage = `입찰에 실패했습니다. (오류 코드: ${status})`;
+                }
+            } else if (error.code === 'NETWORK_ERROR' || !navigator.onLine) {
+                errorMessage = '네트워크 연결을 확인해주세요.';
+            } else if (error.message) {
+                errorMessage = error.message;
+            }
+            
+            toast.error(errorMessage);
         } finally {
             setBidLoading(false);
         }
@@ -221,21 +269,41 @@ export default function AuctionProductDetailPage() {
 
     // 수동 낙찰 함수
     const handleManualEnd = async () => {
+        // 경매 소유자 확인
+        if (!isAuctionOwner) {
+            toast.error('경매 소유자만 수동 낙찰할 수 있습니다.');
+            return;
+        }
+        
+        if (!auction || auction.isWon || new Date(auction.endTime) < new Date()) {
+            toast.error('이미 종료된 경매에는 수동 낙찰할 수 없습니다.');
+            return;
+        }
+        
         if (!bids.length) {
-            showToast('입찰이 없어 수동 낙찰할 수 없습니다.', 'error');
+            toast.error('입찰이 없어 수동 낙찰할 수 없습니다.');
             return;
         }
 
         // 활성화된 입찰 중 최고가 찾기
         const activeBids = bids.filter(bid => (bid.status || bid.bidStatus) === 'BID');
         if (!activeBids.length) {
-            showToast('활성화된 입찰이 없어 수동 낙찰할 수 없습니다.', 'error');
+            toast.error('활성화된 입찰이 없어 수동 낙찰할 수 없습니다. 취소된 입찰만 있습니다.');
             return;
         }
 
-        const highestBid = activeBids[0]; // 첫 번째가 최고 입찰 (정렬되어 있음)
+        const highestBid = activeBids[0];
         const bidPrice = highestBid.price || highestBid.bidPrice || 0;
         const bidderNickname = highestBid.bidderNickname || highestBid.userNickname || '익명';
+        
+        // 입찰 데이터 구조 확인용 로그
+        console.log('🔍 최고 입찰 데이터:', JSON.stringify(highestBid, null, 2));
+        
+        // 입찰자 닉네임을 백엔드로 전송 (백엔드에서 닉네임으로 사용자 찾기)
+        const bidUserNickname = highestBid.bidUserNickname;
+                          
+        console.log('🔍 최고 입찰가:', bidPrice);
+        console.log('🔍 최고 입찰자 닉네임:', bidUserNickname);
         
         const confirmMessage = `${bidderNickname}님의 ${bidPrice.toLocaleString()}원 입찰로 수동 낙찰하시겠습니까?\n\n이 작업은 되돌릴 수 없습니다.`;
         
@@ -244,17 +312,63 @@ export default function AuctionProductDetailPage() {
         }
 
         setManualEndLoading(true);
+        
         try {
+            toast.info('수동 낙찰 처리 중입니다...');
+            
+            console.log('📤 수동 낙찰 요청 데이터:', {
+                bidPrice: bidPrice,
+                bidUserNickname: bidUserNickname
+            });
+            
             const response = await auctionApi.endAuction(id, {
                 bidPrice: bidPrice,
-                bidUserId: highestBid.bidderUserId || highestBid.userId
+                bidUserNickname: bidUserNickname
             });
-            showToast(`🎉 수동 낙찰 완료!\n낙찰자: ${bidderNickname}\n낙찰가: ${bidPrice.toLocaleString()}원`, 'success');
-            // 페이지 새로고침으로 상태 업데이트
-            fetchAuction();
+            
+            toast.success(`🎉 수동 낙찰 완료!\n낙찰자: ${bidderNickname}\n낙찰가: ${bidPrice.toLocaleString()}원`);
+            
+            // 경매 상태 업데이트
+            setTimeout(() => {
+                fetchAuction();
+            }, 1000);
+            
         } catch (error) {
             console.error('수동 낙찰 오류:', error);
-            showToast(error.message || '수동 낙찰에 실패했습니다.', 'error');
+            
+            let errorMessage = '수동 낙찰에 실패했습니다.';
+            
+            if (error.response) {
+                const status = error.response.status;
+                switch (status) {
+                    case 400:
+                        errorMessage = '잘못된 요청입니다. 입찰 정보를 확인해주세요.';
+                        break;
+                    case 401:
+                        errorMessage = '로그인이 필요합니다.';
+                        break;
+                    case 403:
+                        errorMessage = '경매 소유자만 수동 낙찰할 수 있습니다.';
+                        break;
+                    case 404:
+                        errorMessage = '해당 경매를 찾을 수 없습니다.';
+                        break;
+                    case 409:
+                        errorMessage = '이미 종료된 경매이거나 낙찰 처리가 불가능한 상태입니다.';
+                        break;
+                    case 500:
+                        errorMessage = '서버 오류가 발생했습니다. 잠시 후 다시 시도해주세요.';
+                        break;
+                    default:
+                        errorMessage = `수동 낙찰에 실패했습니다. (오류 코드: ${status})`;
+                }
+            } else if (error.code === 'NETWORK_ERROR' || !navigator.onLine) {
+                errorMessage = '네트워크 연결을 확인해주세요.';
+            } else if (error.message) {
+                errorMessage = error.message;
+            }
+            
+            toast.error(errorMessage);
         } finally {
             setManualEndLoading(false);
         }
@@ -269,33 +383,67 @@ export default function AuctionProductDetailPage() {
         }
 
         setManualEndLoading(true);
+        
         try {
+            toast.info('경매 취소 처리 중입니다...');
+            
             const response = await auctionApi.deleteAuction(id);
             
-            // 성공 알림창
-            alert('경매가 성공적으로 취소되었습니다!\n모든 입찰자에게 포인트가 반환됩니다.');
+            // 성공 Toast 알림
+            toast.success('경매가 성공적으로 취소되었습니다! 모든 입찰자에게 포인트가 반환됩니다.');
             
             // 웹소켓 연결 해제
-            unsubscribe(`/topic/auction/${id}/bid`);
-            unsubscribe(`/topic/auction/${id}/won`);
-            unsubscribe(`/topic/auction/${id}/failed`);
-            unsubscribe(`/topic/auction/${id}/deleted`);
+            try {
+                unsubscribe(`/topic/auction/${id}/bid`);
+                unsubscribe(`/topic/auction/${id}/won`);
+                unsubscribe(`/topic/auction/${id}/failed`);
+                unsubscribe(`/topic/auction/${id}/deleted`);
+            } catch (wsError) {
+                console.warn('WebSocket 연결 해제 실패:', wsError);
+            }
             
-            // 리다이렉트 시도 (여러 방법)
-            console.log('🔄 경매 취소 후 리다이렉트 시도');
-            
-            // 1. 메인 페이지로 즉시 이동
-            navigate('/');
-            
-            // 2. 1초 후 강제 이동
+            // 메인 페이지로 이동
             setTimeout(() => {
-                console.log('🔄 강제 리다이렉트 시도');
-                window.location.href = '/';
-            }, 1000);
+                navigate('/');
+            }, 1500);
             
         } catch (error) {
             console.error('경매 취소 오류:', error);
-            showToast(error.message || '경매 취소에 실패했습니다.', 'error');
+            
+            // 구체적인 에러 메시지 처리
+            let errorMessage = '경매 취소에 실패했습니다.';
+            
+            if (error.response) {
+                const status = error.response.status;
+                switch (status) {
+                    case 400:
+                        errorMessage = '잘못된 요청입니다. 경매 상태를 확인해주세요.';
+                        break;
+                    case 401:
+                        errorMessage = '로그인이 필요합니다.';
+                        break;
+                    case 403:
+                        errorMessage = '경매 취소 권한이 없습니다.';
+                        break;
+                    case 404:
+                        errorMessage = '해당 경매를 찾을 수 없습니다.';
+                        break;
+                    case 409:
+                        errorMessage = '이미 종료된 경매는 취소할 수 없습니다.';
+                        break;
+                    case 500:
+                        errorMessage = '서버 오류가 발생했습니다. 잠시 후 다시 시도해주세요.';
+                        break;
+                    default:
+                        errorMessage = `경매 취소에 실패했습니다. (오류 코드: ${status})`;
+                }
+            } else if (error.code === 'NETWORK_ERROR' || !navigator.onLine) {
+                errorMessage = '네트워크 연결을 확인해주세요.';
+            } else if (error.message) {
+                errorMessage = error.message;
+            }
+            
+            toast.error(errorMessage);
         } finally {
             setManualEndLoading(false);
         }
@@ -311,23 +459,57 @@ export default function AuctionProductDetailPage() {
         }
 
         try {
-            setIsCancellingBid(true); // 입찰 취소 중 플래그 설정
+            setIsCancellingBid(true);
+            toast.info('입찰 취소 처리 중입니다...');
             
             const response = await bidApi.deleteBid(id, bidPrice);
-            showToast('입찰이 취소되었습니다.', 'success');
+            toast.success('입찰이 성공적으로 취소되었습니다. 포인트가 반환되었습니다.');
             
             // 입찰 목록 새로고침
             fetchBids(1, true);
             
-            // 입찰 취소 후 서버에서 현재가 확인 (2초 후)
+            // 입찰 취소 후 서버에서 현재가 확인
             setTimeout(() => {
-                fetchAuction(); // 서버에서 실제 현재가 가져오기
+                fetchAuction();
                 setIsCancellingBid(false);
-            }, 2000);
+            }, 1500);
             
         } catch (error) {
             console.error('입찰 취소 오류:', error);
-            showToast(error.message || '입찰 취소에 실패했습니다.', 'error');
+            
+            let errorMessage = '입찰 취소에 실패했습니다.';
+            
+            if (error.response) {
+                const status = error.response.status;
+                switch (status) {
+                    case 400:
+                        errorMessage = '잘못된 요청입니다. 입찰 정보를 확인해주세요.';
+                        break;
+                    case 401:
+                        errorMessage = '로그인이 필요합니다.';
+                        break;
+                    case 403:
+                        errorMessage = '본인의 입찰만 취소할 수 있습니다.';
+                        break;
+                    case 404:
+                        errorMessage = '해당 입찰을 찾을 수 없습니다.';
+                        break;
+                    case 409:
+                        errorMessage = '이미 취소되었거나 종료된 입찰입니다.';
+                        break;
+                    case 500:
+                        errorMessage = '서버 오류가 발생했습니다. 잠시 후 다시 시도해주세요.';
+                        break;
+                    default:
+                        errorMessage = `입찰 취소에 실패했습니다. (오류 코드: ${status})`;
+                }
+            } else if (error.code === 'NETWORK_ERROR' || !navigator.onLine) {
+                errorMessage = '네트워크 연결을 확인해주세요.';
+            } else if (error.message) {
+                errorMessage = error.message;
+            }
+            
+            toast.error(errorMessage);
             setIsCancellingBid(false);
         }
     };
@@ -365,13 +547,24 @@ export default function AuctionProductDetailPage() {
         const handleWonUpdate = (message) => {
             try {
                 const wonUpdate = JSON.parse(message.body);
-                const finalPrice = wonUpdate.finalPrice || wonUpdate.currentPrice || wonUpdate.price;
+                const finalPrice = wonUpdate.finalPrice || wonUpdate.currentPrice || wonUpdate.price || wonUpdate.bidPrice;
+                
+                console.log('🏆 낙찰 업데이트 받음:', wonUpdate);
+                
                 setAuction(prev => ({
                     ...prev,
                     isWon: true,
-                    currentPrice: finalPrice
+                    currentPrice: finalPrice,
+                    endTime: new Date().toISOString() // 현재 시간으로 종료 시간 업데이트
                 }));
-                showToast(`🎉 낙찰 완료!\n최종 낙찰가: ${finalPrice ? finalPrice.toLocaleString() : '정보 없음'}원`, 'success');
+                
+                // 입찰 목록 새로고침하여 낙찰 상태 반영
+                fetchBids(1, true);
+                
+                // 경매 정보도 새로고침
+                fetchAuction();
+                
+                toast.success(`🎉 낙찰 완료!\n최종 낙찰가: ${finalPrice ? finalPrice.toLocaleString() : '정보 없음'}원`);
             } catch (error) {
                 console.error('낙찰 업데이트 처리 오류:', error);
             }
@@ -393,7 +586,7 @@ export default function AuctionProductDetailPage() {
                 const toastMessage = currentPrice === 0 
                     ? '입찰이 없어 유찰되었습니다.' 
                     : '경매가 유찰되었습니다.';
-                showToast(`😔 ${toastMessage}`, 'warning');
+                toast.warning(`😔 ${toastMessage}`);
             } catch (error) {
                 console.error('유찰 업데이트 처리 오류:', error);
             }
@@ -405,7 +598,7 @@ export default function AuctionProductDetailPage() {
                 
                 // 경매 삭제 알림
                 alert('📢 경매가 판매자에 의해 취소되었습니다!\n입찰하신 포인트는 자동으로 반환됩니다.');
-                showToast('경매가 취소되었습니다. 메인 페이지로 이동합니다.', 'warning');
+                toast.warning('경매가 취소되었습니다. 메인 페이지로 이동합니다.');
                 
                 // 3초 후 메인 페이지로 이동
                 setTimeout(() => {
@@ -436,7 +629,7 @@ export default function AuctionProductDetailPage() {
             unsubscribe(`/topic/auction/${id}/failed`);
             unsubscribe(`/topic/auction/${id}/deleted`);
         };
-    }, [isConnected, id, fetchBids, showToast, subscribe, unsubscribe]);
+    }, [isConnected, id, fetchBids, toast, subscribe, unsubscribe]);
     
     // 남은 시간 계산 함수
     const calculateTimeLeft = useCallback(() => {
@@ -1087,16 +1280,27 @@ export default function AuctionProductDetailPage() {
                         </div>
                         <button
                             onClick={handleBid}
-                            disabled={bidLoading || !bidPrice || isNaN(parseInt(bidPrice)) || parseInt(bidPrice) < (auction.currentPrice ? auction.currentPrice + 1000 : auction.startPrice)}
+                            disabled={bidLoading}
                             style={{
-                                background: bidLoading || !bidPrice || isNaN(parseInt(bidPrice)) || parseInt(bidPrice) < (auction.currentPrice ? auction.currentPrice + 1000 : auction.startPrice) ? "#ccc" : "#7f56fd",
+                                background: bidLoading ? "#ccc" : "#7f56fd",
                                 color: "#fff",
                                 padding: "12px 24px",
                                 borderRadius: 6,
                                 fontWeight: 500,
                                 fontSize: 16,
                                 border: "none",
-                                cursor: bidLoading || !bidPrice || isNaN(parseInt(bidPrice)) || parseInt(bidPrice) < (auction.currentPrice ? auction.currentPrice + 1000 : auction.startPrice) ? "not-allowed" : "pointer"
+                                cursor: bidLoading ? "not-allowed" : "pointer",
+                                transition: "all 0.2s ease"
+                            }}
+                            onMouseOver={(e) => {
+                                if (!bidLoading) {
+                                    e.target.style.background = "#6d47ed";
+                                }
+                            }}
+                            onMouseOut={(e) => {
+                                if (!bidLoading) {
+                                    e.target.style.background = "#7f56fd";
+                                }
                             }}
                         >
                             {bidLoading ? "입찰 중..." : "입찰하기"}

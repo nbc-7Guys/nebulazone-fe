@@ -225,6 +225,26 @@ const LandingPage = () => {
                             {mappedAuction.endTime ? calculateTimeLeft(mappedAuction.endTime) : '정보 없음'}
                         </span>
                     </div>
+                    
+                    {/* 판매/낙찰 상태 마크 */}
+                    {(auction.isSold || auction.isWon || auction.isFailed) && (
+                        <div className="sale-status-badge" style={{
+                            position: 'absolute',
+                            top: '8px',
+                            right: '8px',
+                            backgroundColor: auction.isWon || auction.isSold ? '#fed7d7' : '#f7fafc',
+                            color: auction.isWon || auction.isSold ? '#f56565' : '#a0aec0',
+                            padding: '4px 8px',
+                            borderRadius: '12px',
+                            fontSize: '11px',
+                            fontWeight: '600',
+                            border: `1px solid ${auction.isWon || auction.isSold ? '#f56565' : '#a0aec0'}`,
+                            boxShadow: '0 2px 4px rgba(0,0,0,0.1)',
+                            zIndex: 10
+                        }}>
+                            {auction.isWon ? '낙찰완료' : auction.isSold ? '판매완료' : auction.isFailed ? '유찰' : '완료'}
+                        </div>
+                    )}
                 </div>
                 <div className="auction-info-compact">
                     <h4 className="auction-title-compact">{mappedAuction.title}</h4>
