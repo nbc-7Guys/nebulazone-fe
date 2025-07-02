@@ -209,7 +209,16 @@ export default function ProductCreatePage() {
                         if (formData.type === 'DIRECT') {
                             navigate(`/products/direct/${response.productId}?catalogId=${selectedCatalog.catalogId}`);
                         } else {
-                            navigate(`/products/auction/${response.productId}`);
+                            // 경매 상품의 경우 auctionId를 사용해야 함
+                            console.log('🔍 경매 상품 생성 응답 (이미지 실패):', JSON.stringify(response, null, 2));
+                            const auctionId = response.auctionId || response.productId;
+                            
+                            if (auctionId) {
+                                navigate(`/products/auction/${auctionId}`);
+                            } else {
+                                console.error('❌ 이미지 실패 시에도 auctionId 없음!');
+                                navigate('/');
+                            }
                         }
                     }, 2500);  // 2.5초 후 자동 이동
                 }
@@ -231,7 +240,23 @@ export default function ProductCreatePage() {
                 if (formData.type === 'DIRECT') {
                     navigate(`/products/direct/${response.productId}?catalogId=${selectedCatalog.catalogId}`);
                 } else {
-                    navigate(`/products/auction/${response.productId}`);
+                    // 경매 상품의 경우 auctionId를 사용해야 함
+                    console.log('🔍 경매 등록 응답 상세:', JSON.stringify(response, null, 2));
+                    console.log('🔍 auctionId 확인:', response.auctionId);
+                    console.log('🔍 productId 확인:', response.productId);
+                    
+                    const auctionId = response.auctionId || response.productId;
+                    const targetUrl = `/products/auction/${auctionId}`;
+                    
+                    console.log('🔍 리다이렉트 URL:', targetUrl);
+                    
+                    if (auctionId) {
+                        navigate(targetUrl);
+                    } else {
+                        console.error('❌ auctionId와 productId 모두 없음!');
+                        // 일단 메인으로 이동
+                        navigate('/');
+                    }
                 }
             }, 1500); // 1.5초 후 이동
 
