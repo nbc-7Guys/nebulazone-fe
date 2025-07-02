@@ -25,7 +25,7 @@ import { ToastManager } from "./utils/error/errorHandler";
 import ToastDemo from "./components/ui/ToastDemo";
 import WebSocketStatus from "./components/common/WebSocketStatus";
 import AuctionProductDetailPage from "./pages/AuctionProductDetailPage.jsx";
-import TossPaymenrSuccesspage from "./pages/TossPaymenrSuccesspage.jsx";
+import TossPaymentSuccessPage from "./pages/TossPaymentSuccessPage.jsx";
 import CatalogDetailPage from "./pages/CatalogDetailPage.jsx";
 import CatalogListPage from "./pages/CatalogListPage.jsx";
 
@@ -258,7 +258,7 @@ function App() {
                                 } />
                                 <Route path="/toss/success" element={
                                     <PrivateRoute>
-                                        <TossPaymenrSuccesspage />
+                                        <TossPaymentSuccessPage />
                                     </PrivateRoute>
                                 } />
 

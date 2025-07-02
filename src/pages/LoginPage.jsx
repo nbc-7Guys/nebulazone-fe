@@ -54,11 +54,11 @@ export default function LoginPage() {
     };
 
     const handleKakaoLogin = async () => {
-        window.location.href = `${ENV.API_BASE_URL}/oauth2/authorization/kakao`;
+        window.location.href = `${ENV.API_OAUTH_BASE_URL}/oauth2/authorization/kakao`;
     };
 
     const handleNaverLogin = async () => {
-        window.location.href = `${ENV.API_BASE_URL}/oauth2/authorization/naver`;
+        window.location.href = `${ENV.API_OAUTH_BASE_URL}/oauth2/authorization/naver`;
     };
 
     return (
