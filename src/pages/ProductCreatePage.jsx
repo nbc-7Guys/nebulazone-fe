@@ -145,41 +145,26 @@ export default function ProductCreatePage() {
             return;
         }
 
+        if (formData.type === 'AUCTION' && !formData.endTime) {
+            setError('경매 기간을 선택해주세요.');
+            return;
+        }
+
         setLoading(true);
         setError('');
 
         try {
-            // 경매 종료시간 계산
+            // 경매의 경우 endTime을 문자열로 백엔드에 전송 (백엔드에서 계산)
             let endTime = null;
             if (formData.type === 'AUCTION' && formData.endTime) {
-                const now = new Date();
-                const endTimeDate = new Date(now);
-
-                switch (formData.endTime) {
-                    case 'minute_1':
-                        endTimeDate.setMinutes(endTimeDate.getMinutes() + 1);
-                        break;
-                    case 'hour_12':
-                        endTimeDate.setHours(endTimeDate.getHours() + 12);
-                        break;
-                    case 'hour_24':
-                        endTimeDate.setHours(endTimeDate.getHours() + 24);
-                        break;
-                    case 'day_3':
-                        endTimeDate.setDate(endTimeDate.getDate() + 3);
-                        break;
-                    default:
-                        endTimeDate.setMinutes(endTimeDate.getMinutes() + 1);
-                }
-
-                endTime = endTimeDate.toISOString();
+                endTime = formData.endTime; // MINUTE_1, HOUR_12, HOUR_24, DAY_3 등의 문자열 값
             }
 
             const productData = {
                 catalogId: selectedCatalog.catalogId,
                 name: formData.name,
                 description: formData.description,
-                price: parseInt(formData.price),
+                price: parseInt(formData.price.replace(/,/g, '')), // 콤마 제거 후 파싱
                 type: formData.type,
                 ...(endTime && { endTime })
             };
