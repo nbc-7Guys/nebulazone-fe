@@ -20,6 +20,7 @@ import CatalogDetailPage from '../pages/CatalogDetailPage';
 import CatalogListPage from '../pages/CatalogListPage';
 import PointManagementPage from '../pages/PointManagementPage';
 import OAuthRedirectPage from '../pages/OAuthRedirectPage';
+import MyBidsPage from '../pages/MyBidsPage';
 import PrivateRoute from '../components/common/PrivateRoute';
 
 /**
@@ -94,6 +95,13 @@ const UserRoutes = () => {
             <Route path="/transactions" element={
                 <PrivateRoute>
                     <TransactionHistoryPage />
+                </PrivateRoute>
+            } />
+            
+            {/* 입찰 내역 라우트 */}
+            <Route path="/my-bids" element={
+                <PrivateRoute>
+                    <MyBidsPage />
                 </PrivateRoute>
             } />
 
