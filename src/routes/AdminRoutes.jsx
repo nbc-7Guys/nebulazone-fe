@@ -2,6 +2,7 @@ import React from 'react';
 import { Routes, Route } from 'react-router-dom';
 import AdminPointManagementPage from '../pages/AdminPointManagementPage';
 import AdminDashboard from '../pages/AdminDashboard';
+import AdminBanManagementPage from '../pages/AdminBanManagementPage';
 
 /**
  * 관리자 전용 라우트들
@@ -12,6 +13,7 @@ const AdminRoutes = () => {
         <Routes>
             {/* 관리자 포인트 관리 */}
             <Route path="/points" element={<AdminPointManagementPage />} />
+            <Route path="/ban" element={<AdminBanManagementPage />} />
             
             {/* 추후 관리자 기능 추가 시 여기에 라우트 추가 */}
             {/* <Route path="/users" element={<AdminUserManagementPage />} /> */}

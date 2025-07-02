@@ -45,23 +45,27 @@ export const NotificationProvider = ({ children }) => {
     // 초기 알림 데이터 로드
     useEffect(() => {
         const loadNotifications = async () => {
+            if (!JwtManager.getToken()) {
+                console.log('[NotificationContext] No token, skipping notification load.');
+                return;
+            }
+
             try {
                 const response = await notificationApi.getUnreadNotifications();
-                setNotifications(response.notifications || []);
-                // unread count를 업데이트
+                setNotifications(response?.notifications || []);
                 setUnreadCount(
-                    (response.notifications || []).filter(notification => !notification.isRead).length
+                    (response?.notifications || []).filter(n => !n.isRead).length
                 );
                 console.log('[NotificationContext] Loaded initial notifications:', response);
             } catch (error) {
                 console.error('[NotificationContext] Failed to load notifications:', error);
+                // 실패 시에도 앱이 중단되지 않도록 초기 상태를 유지
+                setNotifications([]);
+                setUnreadCount(0);
             }
         };
 
-        const token = JwtManager.getToken();
-        if (token) {
-            loadNotifications();
-        }
+        loadNotifications();
     }, []);
 
     // 알림 구독

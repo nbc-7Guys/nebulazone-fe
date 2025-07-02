@@ -40,7 +40,7 @@ export default function AdminDashboard() {
                         transition: 'transform 0.2s ease, box-shadow 0.2s ease',
                         cursor: 'pointer'
                     }}
-                    onClick={() => window.location.href = '/nebulazone-admin/points'}
+                    onClick={() => window.location.href = '/admin/points'}
                     onMouseEnter={(e) => {
                         e.currentTarget.style.transform = 'translateY(-4px)';
                         e.currentTarget.style.boxShadow = '0 8px 30px rgba(229, 62, 62, 0.15)';
@@ -111,6 +111,92 @@ export default function AdminDashboard() {
                             <span style={{ 
                                 fontSize: '18px',
                                 color: '#e53e3e'
+                            }}>
+                                →
+                            </span>
+                        </div>
+                    </div>
+
+                    {/* 제재 관리 카드 */}
+                    <div style={{
+                        background: 'linear-gradient(135deg, #f0f9ff, #eef2ff)',
+                        border: '1px solid #bee3f8',
+                        borderRadius: '16px',
+                        padding: '24px',
+                        boxShadow: '0 4px 20px rgba(0,0,0,0.08)',
+                        transition: 'transform 0.2s ease, box-shadow 0.2s ease',
+                        cursor: 'pointer'
+                    }}
+                    onClick={() => window.location.href = '/admin/ban'}
+                    onMouseEnter={(e) => {
+                        e.currentTarget.style.transform = 'translateY(-4px)';
+                        e.currentTarget.style.boxShadow = '0 8px 30px rgba(59, 130, 246, 0.15)';
+                    }}
+                    onMouseLeave={(e) => {
+                        e.currentTarget.style.transform = 'translateY(0)';
+                        e.currentTarget.style.boxShadow = '0 4px 20px rgba(0,0,0,0.08)';
+                    }}
+                    >
+                        <div style={{
+                            display: 'flex',
+                            alignItems: 'center',
+                            marginBottom: '16px'
+                        }}>
+                            <div style={{
+                                width: '48px',
+                                height: '48px',
+                                background: 'linear-gradient(135deg, #3b82f6, #6366f1)',
+                                borderRadius: '12px',
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                                fontSize: '24px',
+                                marginRight: '16px'
+                            }}>
+                                🚫
+                            </div>
+                            <div>
+                                <h3 style={{
+                                    fontSize: '1.25rem',
+                                    fontWeight: '600',
+                                    color: '#3b82f6',
+                                    margin: 0
+                                }}>
+                                    제재 관리
+                                </h3>
+                                <p style={{
+                                    fontSize: '0.9rem',
+                                    color: '#4338ca',
+                                    margin: '4px 0 0 0'
+                                }}>
+                                    Ban Management
+                                </p>
+                            </div>
+                        </div>
+                        <p style={{
+                            color: '#4c51bf',
+                            lineHeight: '1.5',
+                            margin: 0,
+                            fontSize: '14px'
+                        }}>
+                            사용자 계정을 제재하거나 제재 내역을 조회하고 관리할 수 있습니다.
+                        </p>
+                        <div style={{
+                            marginTop: '16px',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'space-between'
+                        }}>
+                            <span style={{
+                                fontSize: '12px',
+                                color: '#4338ca',
+                                fontWeight: '500'
+                            }}>
+                                클릭하여 이동
+                            </span>
+                            <span style={{
+                                fontSize: '18px',
+                                color: '#3b82f6'
                             }}>
                                 →
                             </span>

@@ -44,13 +44,11 @@ axiosInstance.interceptors.response.use(
         // 401 에러 처리 (일반적인 인증 실패)
         if (error.response && error.response.status === 401) {
             console.warn('[API] 401 Unauthorized error detected');
-            // 게시글 관련 요청의 경우 자동 리다이렉트 하지 않고 에러를 던져서 재시도 로직이 동작하도록 함
-            if (error.config?.url?.includes('/posts')) {
-                console.log('[API] Posts API 401 error - not redirecting, letting retry logic handle it');
-                return Promise.reject(error);
+            // GET 요청이 아닌 경우에만 리다이렉트
+            if (error.config.method !== 'get') {
+                JwtManager.removeTokens();
+                window.location.href = '/login';
             }
-            JwtManager.removeTokens();
-            window.location.href = '/login';
             return Promise.reject(error);
         }
 

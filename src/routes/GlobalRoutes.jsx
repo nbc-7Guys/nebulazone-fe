@@ -7,7 +7,7 @@ import AdminRoute from '../components/common/AdminRoute';
 /**
  * 관리자 경로 상수
  */
-export const ADMIN_PATH = '/nebulazone-admin';
+export const ADMIN_PATH = '/admin';
 
 /**
  * 글로벌 라우터
