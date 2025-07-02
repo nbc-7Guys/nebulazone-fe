@@ -28,7 +28,6 @@ import AuctionProductDetailPage from "./pages/AuctionProductDetailPage.jsx";
 import TossPaymenrSuccesspage from "./pages/TossPaymenrSuccesspage.jsx";
 import CatalogDetailPage from "./pages/CatalogDetailPage.jsx";
 import CatalogListPage from "./pages/CatalogListPage.jsx";
-import PointChargePage from "./pages/PointChargePage.jsx";
 
 // Toast Manager 초기화 컴포넌트
 function ToastManagerInitializer({ children }) {
@@ -251,10 +250,10 @@ function App() {
                                 {/* 소셜 로그인 */}
                                 <Route path="/oauth/redirect" element={<OAuthRedirectPage />} />
 
-                                {/* 포인트 충전 관련 라우트 */}
+                                {/* 포인트 충전 관련 라우트 - 기존 경로를 포인트 관리 페이지로 리다이렉트 */}
                                 <Route path="/point/charge" element={
                                     <PrivateRoute>
-                                        <PointChargePage />
+                                        <PointManagementPage />
                                     </PrivateRoute>
                                 } />
                                 <Route path="/toss/success" element={

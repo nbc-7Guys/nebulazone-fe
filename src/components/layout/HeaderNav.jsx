@@ -95,9 +95,9 @@ export default function HeaderNav() {
                     )}
 
                     <NavLink
-                        onClick={() => navigate("/point/charge")}
-                        active={isActive("/point/charge")}
-                        text="포인트 충전"
+                        onClick={() => navigate("/points")}
+                        active={isActive("/points") || isActive("/point/charge")}
+                        text="포인트 관리"
                     />
                 </div>
 

@@ -9,7 +9,7 @@ const PointInfo = ({ user }) => {
     };
 
     const handleChargePoint = () => {
-        navigate('/point/charge');
+        navigate('/points');
     };
 
     const handlePointHistory = () => {
@@ -95,7 +95,7 @@ const PointInfo = ({ user }) => {
                         e.target.style.backgroundColor = '#38d39f';
                     }}
                 >
-                    포인트 충전
+                    포인트 관리
                 </button>
                 <button
                     onClick={handlePointHistory}
