@@ -14,6 +14,7 @@
     "dev:clean": "npx --yes vite --force --clearCache"
   },
   "dependencies": {
+    "@hookform/resolvers": "^5.1.1",
     "@stomp/stompjs": "^7.1.1",
     "@tosspayments/tosspayments-sdk": "^2.3.5",
     "@vercel/analytics": "^1.5.0",
@@ -21,8 +22,10 @@
     "jwt-decode": "^4.0.0",
     "react": "^19.1.0",
     "react-dom": "^19.1.0",
+    "react-hook-form": "^7.59.0",
     "react-router-dom": "^7.6.3",
-    "sockjs-client": "^1.6.1"
+    "sockjs-client": "^1.6.1",
+    "yup": "^1.6.1"
   },
   "devDependencies": {
     "@eslint/js": "^9.30.0",
