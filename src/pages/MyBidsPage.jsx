@@ -313,7 +313,29 @@ export default function MyBidsPage() {
                             <>
                                 {/* 입찰 목록 */}
                                 <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-                                    {bids.map((bid, index) => (
+                                    {bids.sort((a, b) => {
+                                        // BID(입찰중) > WON(낙찰) > CANCELLED(취소) > FAILED(유찰) 순서
+                                        const getStatusOrder = (status) => {
+                                            switch(status) {
+                                                case 'BID': return 0;
+                                                case 'WON': return 1;
+                                                case 'CANCELLED': return 2;
+                                                case 'FAILED': return 3;
+                                                default: return 4;
+                                            }
+                                        };
+
+                                        const orderA = getStatusOrder(a.bidStatus);
+                                        const orderB = getStatusOrder(b.bidStatus);
+
+                                        // 상태가 다르면 상태 우선순위로
+                                        if (orderA !== orderB) {
+                                            return orderA - orderB;
+                                        }
+
+                                        // 같은 상태면 최신순 (입찰 시간)
+                                        return new Date(b.bidTime || 0) - new Date(a.bidTime || 0);
+                                    }).map((bid, index) => (
                                         <div
                                             key={`${bid.auctionId}-${bid.bidPrice}-${index}`}
                                             style={{
