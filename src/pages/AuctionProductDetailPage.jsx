@@ -185,17 +185,17 @@ export default function AuctionProductDetailPage() {
                 setHasMoreBids(false);
             }
             
-            // 상태별 정렬 (낙찰 > 최신입찰 > 일반입찰 > 취소)
+            // 상태별 정렬 (낙찰 > 입찰중 > 취소)
             const sortedBids = bidData.sort((a, b) => {
                 const statusA = a.status || a.bidStatus;
                 const statusB = b.status || b.bidStatus;
                 
                 // 상태별 우선순위
                 const getStatusPriority = (status) => {
-                    if (status === 'WON') return 1; // 낙찰 최우선
-                    if (status === 'BID') return 2; // 입찰중
-                    if (status === 'CANCEL') return 3; // 취소 최하위
-                    return 2; // 기본값
+                    if (status === 'WON') return 0; // 낙찰 최우선
+                    if (status === 'BID') return 1; // 입찰중 두번째
+                    if (status === 'CANCEL' || status === 'CANCELLED') return 2; // 취소 최하위
+                    return 1; // 기본값은 입찰중으로
                 };
                 
                 const priorityA = getStatusPriority(statusA);
@@ -221,7 +221,41 @@ export default function AuctionProductDetailPage() {
             });
             
             setBids(prev => {
-                const newBids = reset ? sortedBids : [...prev, ...sortedBids];
+                // 정렬 함수
+                const sortAllBids = (allBids) => {
+                    return allBids.sort((a, b) => {
+                        const statusA = a.status || a.bidStatus;
+                        const statusB = b.status || b.bidStatus;
+                        
+                        const getStatusPriority = (status) => {
+                            if (status === 'WON') return 0; // 낙찰 최우선
+                            if (status === 'BID') return 1; // 입찰중 두번째
+                            if (status === 'CANCEL' || status === 'CANCELLED') return 2; // 취소 최하위
+                            return 1; // 기본값은 입찰중으로
+                        };
+                        
+                        const priorityA = getStatusPriority(statusA);
+                        const priorityB = getStatusPriority(statusB);
+                        
+                        if (priorityA !== priorityB) {
+                            return priorityA - priorityB;
+                        }
+                        
+                        const dateA = a.createdAt || a.bidTime || a.createTime;
+                        const dateB = b.createdAt || b.bidTime || b.createTime;
+                        
+                        if (dateA && dateB) {
+                            return new Date(dateB) - new Date(dateA);
+                        }
+                        
+                        const priceA = a.price || a.bidPrice || 0;
+                        const priceB = b.price || b.bidPrice || 0;
+                        return priceB - priceA;
+                    });
+                };
+                
+                // 전체 데이터 합쳐서 재정렬
+                const newBids = reset ? sortedBids : sortAllBids([...prev, ...sortedBids]);
                 
                 // 입찰 목록 업데이트 후 즉시 현재가 재계산
                 setTimeout(() => {
