@@ -78,7 +78,7 @@ export default function AuctionProductDetailPage() {
                 
                 // 백엔드에서 실제 사용자 정보 가져오기 (닉네임 포함)
                 if (finalUser.id) {
-                    userApi.getUserProfile(finalUser.id)
+                    userApi.getMyProfile()
                         .then(userProfile => {
                             setCurrentUser(prev => ({
                                 ...prev,
@@ -90,6 +90,7 @@ export default function AuctionProductDetailPage() {
                             console.warn('사용자 정보 조회 실패:', error);
                         });
                 }
+
             } catch (error) {
                 console.error('JWT 파싱 오류:', error);
                 setCurrentUser(userInfo);

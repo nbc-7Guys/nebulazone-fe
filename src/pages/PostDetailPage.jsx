@@ -8,6 +8,7 @@ import CommentList from "../components/forms/CommentList";
 import { postApi, userApi } from "../services/api";
 import { getPostTypeLabel } from "../types/PostType";
 import { getMyUserIdFromJwt } from "../utils/auth/auth";
+import { formatKoreanDate } from "../utils/formatting/dateUtils";
 
 export default function PostDetailPage() {
     const navigate = useNavigate();
@@ -89,17 +90,6 @@ export default function PostDetailPage() {
         navigate('/posts');
     };
 
-    // 날짜 포맷팅
-    const formatDate = (dateString) => {
-        const date = new Date(dateString);
-        return date.toLocaleString('ko-KR', {
-            year: 'numeric',
-            month: 'long',
-            day: 'numeric',
-            hour: '2-digit',
-            minute: '2-digit'
-        });
-    };
 
     // 내용 내 줄바꿈 처리
     const formatContent = (content) => {
@@ -342,7 +332,7 @@ export default function PostDetailPage() {
                         }}>
                             <div style={{ display: "flex", gap: "16px" }}>
                                 <span style={{ fontWeight: "500" }}>작성자: {post.author}</span>
-                                <span>작성일: {formatDate(post.createdAt)}</span>
+                                <span>작성일: {formatKoreanDate(post.modifiedAt || post.createdAt, true)}</span>
                             </div>
                         </div>
                     </div>

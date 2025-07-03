@@ -77,7 +77,7 @@ export default function PostCard({ post, onClick }) {
                             {post.author || "작성자 미상"}
                         </span>
                         <span>•</span>
-                        <span>{formatRelativeTime(post.createdAt)}</span>
+                        <span>{formatRelativeTime(post.modifiedAt || post.createdAt)}</span>
                     </div>
                 </div>
 

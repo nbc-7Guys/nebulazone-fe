@@ -400,7 +400,7 @@ export default function PostListPage() {
                                         textAlign: "center",
                                         whiteSpace: "nowrap"
                                     }}>
-                                        {formatRelativeTime(post.createdAt)}
+                                        {formatRelativeTime(post.modifiedAt || post.createdAt)}
                                     </div>
                                 </div>
                             ))}

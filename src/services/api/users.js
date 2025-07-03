@@ -4,12 +4,8 @@ import {getMyUserIdFromJwt} from "../../utils/auth/index.js";
 const userApi = {
     // 내 프로필 조회
     getMyProfile: async () => {
-        const userId = getMyUserIdFromJwt();
-        if (!userId) {
-            throw new Error('로그인이 필요합니다.');
-        }
         try {
-            return await apiRequest(`/users/${userId}`);
+            return await apiRequest('/users/me');
         } catch (error) {
             const errorInfo = ErrorHandler.handleApiError(error);
             throw new Error(errorInfo.message);
