@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import CommentForm from './CommentForm';
 import { commentApi } from '../../services/api';
 import { getMyUserIdFromJwt } from '../../utils/auth/auth';
+import { formatRelativeTime } from '../../utils/formatting/dateUtils';
 
 export default function CommentItem({ 
     comment, 
@@ -20,25 +21,6 @@ export default function CommentItem({
     // 닉네임으로 작성자 확인 (서버에서 사용자 정보를 추가로 제공할 때까지 임시)
     const isAuthor = currentUserNickname && currentUserNickname === comment.author;
 
-    // 날짜 포맷팅
-    const formatDate = (dateString) => {
-        const date = new Date(dateString);
-        const now = new Date();
-        const diffInHours = Math.floor((now - date) / (1000 * 60 * 60));
-
-        if (diffInHours < 1) {
-            const diffInMinutes = Math.floor((now - date) / (1000 * 60));
-            return diffInMinutes < 1 ? '방금 전' : `${diffInMinutes}분 전`;
-        } else if (diffInHours < 24) {
-            return `${diffInHours}시간 전`;
-        } else {
-            return date.toLocaleDateString('ko-KR', {
-                year: 'numeric',
-                month: 'short',
-                day: 'numeric'
-            });
-        }
-    };
 
     // 댓글 삭제
     const handleDelete = async () => {
@@ -113,7 +95,7 @@ export default function CommentItem({
                             color: '#718096',
                             fontSize: '12px'
                         }}>
-                            {formatDate(comment.createdAt)}
+                            {formatRelativeTime(comment.createdAt)}
                         </span>
                         {comment.modifiedAt && comment.modifiedAt !== comment.createdAt && (
                             <span style={{

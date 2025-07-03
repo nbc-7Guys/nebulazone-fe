@@ -9,6 +9,7 @@ import SEOHead from "../components/common/SEOHead";
 import { postApi } from "../services/api";
 import { PostType, getPostTypeLabel, POST_TYPE_OPTIONS } from "../types/PostType";
 import { useErrorHandler } from "../hooks/useErrorHandler";
+import { formatRelativeTime } from "../utils/formatting/dateUtils";
 
 export default function PostListPage() {
     const navigate = useNavigate();
@@ -145,26 +146,6 @@ export default function PostListPage() {
         navigate(`/posts/${postId}`);
     };
 
-    // 날짜 포맷팅
-    const formatDate = (dateString) => {
-        const date = new Date(dateString);
-        const now = new Date();
-        const diff = now - date;
-        const days = Math.floor(diff / (1000 * 60 * 60 * 24));
-
-        if (days === 0) {
-            const hours = Math.floor(diff / (1000 * 60 * 60));
-            if (hours === 0) {
-                const minutes = Math.floor(diff / (1000 * 60));
-                return `${minutes}분 전`;
-            }
-            return `${hours}시간 전`;
-        } else if (days < 7) {
-            return `${days}일 전`;
-        } else {
-            return date.toLocaleDateString('ko-KR');
-        }
-    };
 
     return (
         <div className="page-enter min-h-screen bg-secondary">
@@ -419,7 +400,7 @@ export default function PostListPage() {
                                         textAlign: "center",
                                         whiteSpace: "nowrap"
                                     }}>
-                                        {formatDate(post.createdAt)}
+                                        {formatRelativeTime(post.createdAt)}
                                     </div>
                                 </div>
                             ))}

@@ -1,6 +1,7 @@
 import React from "react";
 import { getPostTypeLabel } from "../../types/PostType";
 import LazyImage from "../common/LazyImage";
+import { formatRelativeTime } from "../../utils/formatting/dateUtils";
 
 export default function PostCard({ post, onClick }) {
     const handleClick = () => {
@@ -9,36 +10,6 @@ export default function PostCard({ post, onClick }) {
         }
     };
 
-    const formatDate = (dateString) => {
-        if (!dateString) return "";
-        try {
-            const date = new Date(dateString);
-            const now = new Date();
-            const diffTime = Math.abs(now - date);
-            const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
-            const diffHours = Math.floor(diffTime / (1000 * 60 * 60));
-            const diffMinutes = Math.floor(diffTime / (1000 * 60));
-
-            if (diffMinutes < 1) {
-                return "방금 전";
-            } else if (diffMinutes < 60) {
-                return `${diffMinutes}분 전`;
-            } else if (diffHours < 24) {
-                return `${diffHours}시간 전`;
-            } else if (diffDays === 1) {
-                return "1일 전";
-            } else if (diffDays < 7) {
-                return `${diffDays}일 전`;
-            } else {
-                return date.toLocaleDateString('ko-KR', {
-                    month: 'short',
-                    day: 'numeric'
-                });
-            }
-        } catch {
-            return "";
-        }
-    };
 
     const truncateContent = (content, maxLength = 100) => {
         if (!content) return "";
@@ -106,7 +77,7 @@ export default function PostCard({ post, onClick }) {
                             {post.author || "작성자 미상"}
                         </span>
                         <span>•</span>
-                        <span>{formatDate(post.createdAt)}</span>
+                        <span>{formatRelativeTime(post.createdAt)}</span>
                     </div>
                 </div>
 
