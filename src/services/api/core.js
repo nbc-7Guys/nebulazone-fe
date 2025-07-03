@@ -88,7 +88,6 @@ const apiRequest = async (endpoint, options = {}, requireAuth = true) => {
         // 인증이 필요한 경우 인증 인스턴스 사용, 그렇지 않으면 공개 인스턴스 사용
         const instance = requireAuth ? axiosInstance : publicAxiosInstance;
         const response = await instance(endpoint, options);
-        console.log(response.data);
         return response.data;
     } catch (error) {
         // 구체적인 에러 정보 추가

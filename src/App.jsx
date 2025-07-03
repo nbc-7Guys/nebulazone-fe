@@ -145,9 +145,7 @@ function App() {
                                 <GlobalRoutes />
                             </ErrorBoundary>
                             <Analytics />
-                            {/* 개발 환경에서만 WebSocket 상태 표시 */}
                             {/*{isDevelopment && <WebSocketStatus />}*/}
-                            {/*<WebSocketStatus />*/}
                         </WebSocketProvider>
                     </NotificationProvider>
                 </ToastManagerInitializer>
