@@ -277,6 +277,11 @@ export default function AuctionProductDetailPage() {
             toast.success(`입찰이 성공적으로 완료되었습니다! (${currentBidPrice.toLocaleString()}원)`);
             setBidPrice('');
             setBidPriceDisplay('');
+
+            await Promise.all([
+                fetchBids(1, true),
+                fetchAuction()
+            ]);
             
         } catch (error) {
             console.error('입찰 오류:', error);
