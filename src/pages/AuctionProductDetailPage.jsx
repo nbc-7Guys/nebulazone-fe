@@ -278,10 +278,8 @@ export default function AuctionProductDetailPage() {
             setBidPrice('');
             setBidPriceDisplay('');
 
-            await Promise.all([
-                fetchBids(1, true),
-                fetchAuction()
-            ]);
+            // 입찰 목록만 새로고침
+            await fetchBids(1, true);
             
         } catch (error) {
             console.error('입찰 오류:', error);
