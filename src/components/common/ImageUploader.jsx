@@ -3,7 +3,7 @@ import React, { useRef, useState, useEffect } from "react";
 export default function ImageUploader({
     onImagesChange,
     maxImages = 5,
-    maxFileSize = 5 * 1024 * 1024, // 5MB
+    maxFileSize = 2 * 1024 * 1024, // 5MB
     allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif'],
     existingImages = [],
     onExistingImageRemove,

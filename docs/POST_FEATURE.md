@@ -127,7 +127,7 @@ DELETE /posts/{postId}
 <ImageUploader
   onImagesChange={handleImagesChange}
   maxImages={5}
-  maxFileSize={5 * 1024 * 1024}
+  maxFileSize={2 * 1024 * 1024}
   existingImages={existingUrls}
   onExistingImageRemove={handleRemove}
 />
